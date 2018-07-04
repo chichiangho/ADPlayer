@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners
+        android:bottomLeftRadius="0.0dip"
+        android:bottomRightRadius="5.0dip"
+        android:radius="2.0dip"
+        android:topLeftRadius="0.0dip"
+        android:topRightRadius="5.0dip" />
+
+    <solid android:color="@color/tab_checked" />
+</shape>
