@@ -1,9 +1,11 @@
 package com.adplayer.utils
 
-import android.net.Proxy.getPort
+import android.util.Log
+import com.chichiangho.common.extentions.appCtx
 import org.json.JSONObject
 import java.io.IOException
 import java.io.InputStream
+import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
 
@@ -27,6 +29,22 @@ object ConnectManager {
                 e.printStackTrace()
             }
 
+            val en = NetworkInterface.getNetworkInterfaces()
+            while (en.hasMoreElements()) {
+                val intf = en.nextElement()
+                val enumIpAddr = intf.getInetAddresses()
+                while (enumIpAddr.hasMoreElements()) {
+                    val inetAddress = enumIpAddr.nextElement()
+                    val mIP = inetAddress.getHostAddress().substring(0, 3)
+                    if (mIP == "192") {
+                        var IP = inetAddress.getHostAddress()    //获取本地IP
+                        var PORT = serverSocket?.getLocalPort()    //获取本地的PORT
+                        Log.e("IP", "" + IP)
+                        Log.e("PORT", "" + PORT)
+                    }
+                }
+            }
+
             var socket: Socket? = null
             var inputStream: InputStream? = null
             while (true) {
@@ -39,7 +57,7 @@ object ConnectManager {
 
                 val byte = ByteArray(1024)
                 inputStream?.read(byte)
-                val commandObj = JSONObject(String(byte))
+                val commandObj = JSONObject(String(byte).trim())
                 if (commandObj.has("command")) {
                     when (commandObj.opt("command")) {
                         COMMAND_PLAY_BANNER -> {
@@ -63,15 +81,30 @@ object ConnectManager {
         }.start()
     }
 
-    fun registerCommandListener(callback: (command: String, name: String) -> Unit) {
+    fun registerCommandListener(callback: (command: String, extra: String) -> Unit) {
         this.callback = callback
     }
 
     fun getPics(callback: (array: Array<String>) -> Unit) {
+        //以下为网络请求失败后的备用
+        appCtx.assets.list("pic").forEach {
+            CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
+        }
 
+        //网络请求后一定调用
+        callback(appCtx.getExternalFilesDir("picture").list().map {
+            PlayManager.getPicDir() + "/" + it
+        }.toTypedArray())
     }
 
     fun getVideos(callback: (array: Array<String>) -> Unit) {
-
+        //以下为网络请求失败后的备用
+        appCtx.assets.list("video").forEach {
+            CopyUtil.copyAsserts(appCtx, "video/$it", PlayManager.getVideoDir() + "/" + it)
+        }
+        //网络请求后一定调用
+        callback(appCtx.getExternalFilesDir("video").list().map {
+            PlayManager.getVideoDir() + "/" + it
+        }.toTypedArray())
     }
 }

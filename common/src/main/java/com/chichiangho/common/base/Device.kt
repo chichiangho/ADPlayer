@@ -89,7 +89,7 @@ object Device {
 
     private fun init() {
         try {
-            val ctx = BaseApplication.instance
+            val ctx = appCtx
             val pm = ctx.packageManager
             val info = pm.getPackageInfo(ctx.packageName, 0)
             appVersionName = info.versionName

@@ -2,19 +2,12 @@ package com.adplayer.utils
 
 import android.content.Context
 import com.adplayer.base.AppConfigs
-import com.chichiangho.common.base.BaseApplication
-import com.chichiangho.common.extentions.toObj
+import com.chichiangho.common.extentions.appCtx
 
 object Preference {
-    var loginUser: User? = null
-        get() = field ?: (get(AppConfigs.PREFERENCE_KEY_USER_INFO, "") as String).toObj(User::class.java)
-        set(value) {
-            field = value
-            set(AppConfigs.PREFERENCE_KEY_USER_INFO, value?.toJson() ?: "")
-        }
 
     private fun set(key: String, defValue: Any, asynchronous: Boolean = true) {
-        val sharedPreferences = BaseApplication.instance
+        val sharedPreferences = appCtx
                 .getSharedPreferences(AppConfigs.PREFERENCE_NAME, Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
 
@@ -33,7 +26,7 @@ object Preference {
     }
 
     private fun get(key: String, defValue: Any): Any {
-        val sharedPreferences = BaseApplication.instance.getSharedPreferences(AppConfigs.PREFERENCE_NAME, Context.MODE_PRIVATE)
+        val sharedPreferences = appCtx.getSharedPreferences(AppConfigs.PREFERENCE_NAME, Context.MODE_PRIVATE)
 
         return when (defValue.javaClass.simpleName) {
             "Integer" -> sharedPreferences.getInt(key, defValue as Int)
