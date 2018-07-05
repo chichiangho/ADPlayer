@@ -1,20 +1,11 @@
 package com.chichiangho.common.base
 
 import android.content.Context
-import android.content.Context.TELEPHONY_SERVICE
-import android.telephony.TelephonyManager
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.chichiangho.common.extentions.appCtx
 
 object Device {
-    var phoneNum = ""
-        private set
-        get() {
-            if (field == "")
-                init()
-            return field
-        }
-
     var appName = ""
         private set
         get() {
@@ -79,33 +70,19 @@ object Device {
             return field
         }
 
-    var deviceNum = ""
-        private set
-        get() {
-            if (field == "")
-                init()
-            return field
-        }
-
     private fun init() {
         try {
-            val ctx = appCtx
-            val pm = ctx.packageManager
-            val info = pm.getPackageInfo(ctx.packageName, 0)
+            val pm = appCtx.packageManager
+            val info = pm.getPackageInfo(appCtx.packageName, 0)
             appVersionName = info.versionName
             appVersion = info.versionCode
             appName = pm.getApplicationLabel(info.applicationInfo) as String
 
-
             val metrics = DisplayMetrics()
-            val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            val wm = appCtx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             wm.defaultDisplay.getMetrics(metrics)
             screenWidth = metrics.widthPixels
             screenHeight = metrics.heightPixels
-
-            val telephonyMgr = ctx.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-            deviceNum = telephonyMgr.deviceId?:""
-            phoneNum = telephonyMgr.line1Number?:""
         } catch (e: Exception) {
             e.printStackTrace()
         }

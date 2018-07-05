@@ -17,7 +17,7 @@ object ConnectManager {
     const val COMMAND_SHOW_MAP = "showMap"
     const val COMMAND_UPDATE = "update"
 
-    private var callback: ((command: String, extra: String) -> Unit?)? = null
+    private var callback: ((command: String, extra: JSONObject?) -> Unit?)? = null
 
     fun init() {
         Thread {
@@ -46,31 +46,32 @@ object ConnectManager {
             }
 
             var socket: Socket? = null
-            var inputStream: InputStream? = null
             while (true) {
                 try {
                     socket = serverSocket?.accept()
-                    inputStream = socket?.getInputStream()
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
 
                 val byte = ByteArray(1024)
-                inputStream?.read(byte)
+                socket?.getInputStream()?.read(byte)
                 val commandObj = JSONObject(String(byte).trim())
                 if (commandObj.has("command")) {
+                    var extraObj: JSONObject? = null
+                    if (commandObj.has("extra"))
+                        extraObj = commandObj.optJSONObject("extra")
                     when (commandObj.opt("command")) {
                         COMMAND_PLAY_BANNER -> {
-                            callback?.invoke(COMMAND_PLAY_BANNER, "")
+                            callback?.invoke(COMMAND_PLAY_BANNER, extraObj)
                         }
                         COMMAND_PLAY_VIDEO -> {
-                            callback?.invoke(COMMAND_PLAY_VIDEO, "")
+                            callback?.invoke(COMMAND_PLAY_VIDEO, extraObj)
                         }
                         COMMAND_TACK_PICTURE -> {
-                            callback?.invoke(COMMAND_TACK_PICTURE, "")
+                            callback?.invoke(COMMAND_TACK_PICTURE, extraObj)
                         }
                         COMMAND_SHOW_MAP -> {
-                            callback?.invoke(COMMAND_SHOW_MAP, "")
+                            callback?.invoke(COMMAND_SHOW_MAP, extraObj)
                         }
                     }
                     val outStream = socket?.getOutputStream()
@@ -81,7 +82,7 @@ object ConnectManager {
         }.start()
     }
 
-    fun registerCommandListener(callback: (command: String, extra: String) -> Unit) {
+    fun registerCommandListener(callback: (command: String, extra: JSONObject?) -> Unit) {
         this.callback = callback
     }
 

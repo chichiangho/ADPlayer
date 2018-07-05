@@ -3,7 +3,6 @@ package com.adplayer.activity
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import com.adplayer.utils.Preference
 import com.chichiangho.common.base.CrashHandler
 
 /**

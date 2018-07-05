@@ -17,10 +17,12 @@ import com.yanzhenjie.permission.AndPermission
 import com.youth.banner.Transformer
 import com.youth.banner.loader.ImageLoaderInterface
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
 
 
 class MainActivity : BaseActivity() {
     private val bannerList = ArrayList<String>()
+    private val videoList = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,15 +32,7 @@ class MainActivity : BaseActivity() {
                 .runtime()
                 .permission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 .onGranted {
-                    PlayManager.getPics {
-                        if (it.isEmpty()) {
-                            PlayManager.getPics {
-                                initBanner(it)
-                            }
-                        } else {
-                           initBanner(it)
-                        }
-                    }
+                    initDatas()
                 }
                 .onDenied { finish() }
                 .start()
@@ -48,10 +42,12 @@ class MainActivity : BaseActivity() {
             runOnUiThread {
                 when (command) {
                     ConnectManager.COMMAND_PLAY_BANNER -> {
-                        playBanner(extra)
+                        if (extra?.has("path") == true)
+                            playBanner(extra.optString("path"))
                     }
                     ConnectManager.COMMAND_PLAY_VIDEO -> {
-                        playVideo(extra)
+                        if (extra?.has("path") == true)
+                            playVideo(extra.optString("path"))
                     }
                     ConnectManager.COMMAND_TACK_PICTURE -> {
                         takePic()
@@ -59,30 +55,39 @@ class MainActivity : BaseActivity() {
                     ConnectManager.COMMAND_SHOW_MAP -> {
 
                     }
+                    ConnectManager.COMMAND_UPDATE -> {
+                        initDatas()
+                    }
                 }
             }
         }
     }
 
-    private fun initBanner(it: Array<String>) {
-        bannerList.clear()
-        bannerList.addAll(it.sortedArray())
+    private fun initDatas() {
+        PlayManager.getPics {
+            bannerList.clear()
+            bannerList.addAll(it.sortedArray())
 
-        banner.setImages(bannerList)
-        banner.setDelayTime(5000)
-        banner.setImageLoader(object : ImageLoaderInterface<ImageView> {
-            override fun displayImage(context: Context?, path: Any?, imageView: ImageView?) {
-                imageView?.scaleType = ImageView.ScaleType.FIT_CENTER
-                Glide.with(this@MainActivity).load(path).into(imageView!!)
-            }
+            banner.setImages(bannerList)
+                    .setDelayTime(5000)
+                    .setImageLoader(object : ImageLoaderInterface<ImageView> {
+                        override fun displayImage(context: Context?, path: Any?, imageView: ImageView?) {
+                            imageView?.scaleType = ImageView.ScaleType.FIT_CENTER
+                            Glide.with(this@MainActivity).load(path).into(imageView!!)
+                        }
 
-            override fun createImageView(context: Context?): ImageView {
-                return ImageView(context)
-            }
-        })
-        banner.setBannerAnimation(Transformer.Default)
-        banner.isAutoPlay(true)
-        playBanner("")
+                        override fun createImageView(context: Context?): ImageView {
+                            return ImageView(context)
+                        }
+                    })
+                    .setBannerAnimation(Transformer.Default)
+                    .isAutoPlay(true)
+            playBanner("")
+        }
+        PlayManager.getVideos {
+            videoList.clear()
+            videoList.addAll(it)
+        }
     }
 
     private fun takePic() {
@@ -90,17 +95,34 @@ class MainActivity : BaseActivity() {
     }
 
     private fun playVideo(name: String) {
+        val path = PlayManager.getVideoDir() + "/" + name
+        if (!videoList.contains(path)) {
+            return
+        }
+        if (!File(path).exists())
+            return
+
         banner.visibility = View.GONE
         video.visibility = View.VISIBLE
-        val uri = Uri.parse(PlayManager.getVideoDir() + "/" + name)
+        val uri = Uri.parse(path)
         video.setVideoURI(uri)
         video.setMediaController(MediaController(this@MainActivity))//显示控制栏
         video.setOnPreparedListener {
             video.start()
         }
+        video.setOnCompletionListener {
+            playBanner("")
+        }
     }
 
     private fun playBanner(name: String) {
+        val path = PlayManager.getPicDir() + "/" + name
+        if (!name.isEmpty() && !videoList.contains(path)) {
+            return
+        }
+        if (!File(path).exists())
+            return
+
         video.visibility = View.GONE
         banner.visibility = View.VISIBLE
         video.pause()
