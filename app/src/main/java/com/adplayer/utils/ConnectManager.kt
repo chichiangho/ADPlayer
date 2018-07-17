@@ -2,88 +2,89 @@ package com.adplayer.utils
 
 import android.util.Log
 import com.chichiangho.common.extentions.appCtx
+import com.koushikdutta.async.http.Multimap
+import com.koushikdutta.async.http.body.AsyncHttpRequestBody
+import com.koushikdutta.async.http.server.AsyncHttpServer
+import com.koushikdutta.async.http.server.AsyncHttpServerRequest
+import com.koushikdutta.async.http.server.AsyncHttpServerResponse
+import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import org.json.JSONObject
-import java.io.IOException
-import java.io.InputStream
-import java.net.NetworkInterface
-import java.net.ServerSocket
-import java.net.Socket
+import java.net.URI
 
-
-object ConnectManager {
+object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_PLAY_BANNER = "playBanner"
     const val COMMAND_PLAY_VIDEO = "playVideo"
     const val COMMAND_TACK_PICTURE = "takePicture"
     const val COMMAND_SHOW_MAP = "showMap"
     const val COMMAND_UPDATE = "update"
 
-    private var callback: ((command: String, extra: JSONObject?) -> Unit?)? = null
+    private const val PORT_LISTEN_DEFALT = 8000
 
-    fun init() {
-        Thread {
-            /*指明服务器端的端口号*/
-            var serverSocket: ServerSocket? = null
-            try {
-                serverSocket = ServerSocket(8000)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+    private var server = AsyncHttpServer()
 
-            val en = NetworkInterface.getNetworkInterfaces()
-            while (en.hasMoreElements()) {
-                val intf = en.nextElement()
-                val enumIpAddr = intf.getInetAddresses()
-                while (enumIpAddr.hasMoreElements()) {
-                    val inetAddress = enumIpAddr.nextElement()
-                    val mIP = inetAddress.getHostAddress().substring(0, 3)
-                    if (mIP == "192") {
-                        var IP = inetAddress.getHostAddress()    //获取本地IP
-                        var PORT = serverSocket?.getLocalPort()    //获取本地的PORT
-                        Log.e("IP", "" + IP)
-                        Log.e("PORT", "" + PORT)
-                    }
-                }
-            }
-
-            var socket: Socket? = null
-            while (true) {
-                try {
-                    socket = serverSocket?.accept()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-
-                val byte = ByteArray(1024)
-                socket?.getInputStream()?.read(byte)
-                val commandObj = JSONObject(String(byte).trim())
-                if (commandObj.has("command")) {
-                    var extraObj: JSONObject? = null
-                    if (commandObj.has("extra"))
-                        extraObj = commandObj.optJSONObject("extra")
-                    when (commandObj.opt("command")) {
-                        COMMAND_PLAY_BANNER -> {
-                            callback?.invoke(COMMAND_PLAY_BANNER, extraObj)
-                        }
-                        COMMAND_PLAY_VIDEO -> {
-                            callback?.invoke(COMMAND_PLAY_VIDEO, extraObj)
-                        }
-                        COMMAND_TACK_PICTURE -> {
-                            callback?.invoke(COMMAND_TACK_PICTURE, extraObj)
-                        }
-                        COMMAND_SHOW_MAP -> {
-                            callback?.invoke(COMMAND_SHOW_MAP, extraObj)
-                        }
-                    }
-                    val outStream = socket?.getOutputStream()
-                    outStream?.write("received command ${commandObj.opt("command")}".toByteArray())
-                    outStream?.flush()
-                }
-            }
-        }.start()
+    enum class Status(val requestStatus: Int, val description: String) {
+        REQUEST_OK(200, "请求成功"),
+        REQUEST_ERROR(500, "请求失败"),
+        REQUEST_ERROR_API(501, "无效的请求接口"),
+        REQUEST_ERROR_CMD(502, "无效命令"),
+        REQUEST_ERROR_DEVICEID(503, "不匹配的设备ID"),
+        REQUEST_ERROR_ENV(504, "不匹配的服务环境")
     }
+
+    private var callback: ((command: String, extra: JSONObject?) -> Unit?)? = null
 
     fun registerCommandListener(callback: (command: String, extra: JSONObject?) -> Unit) {
         this.callback = callback
+    }
+
+    /**
+     * 开启本地服务
+     */
+    fun init() { //如果有其他的请求方式，例如下面一行代码的写法
+        server.addAction("OPTIONS", "[\\d\\D]*", this)
+        server.get("[\\d\\D]*", this)
+        server.post("[\\d\\D]*", this)
+        server.listen(PORT_LISTEN_DEFALT)
+    }
+
+    //localhost:8000/command?params={command:"playVideo",extra:{path:"1.mp4"}}
+    override fun onRequest(request: AsyncHttpServerRequest, response: AsyncHttpServerResponse) {
+        val uri = request.path //这个是获取header参数的地方，一定要谨记哦
+        val headers = request.headers.multiMap
+        if (checkUri(uri)) {// 针对的是接口的处理
+            val query = request.query
+            when (uri) {
+                "/command" -> {
+                    val params = JSONObject(query.getString("params"))
+                    val command = params.optString("command")
+                    val extraObj = params.optJSONObject("extra")
+                    when (command) {
+                        COMMAND_PLAY_BANNER -> {
+                            callback?.invoke(COMMAND_PLAY_BANNER, extraObj)
+                            response.send("command $command received")
+                        }
+                        COMMAND_PLAY_VIDEO -> {
+                            callback?.invoke(COMMAND_PLAY_VIDEO, extraObj)
+                            response.send("command $command received")
+                        }
+                        COMMAND_TACK_PICTURE -> {
+                            callback?.invoke(COMMAND_TACK_PICTURE, extraObj)
+                            response.send("command $command received")
+                        }
+                        COMMAND_SHOW_MAP -> {
+                            callback?.invoke(COMMAND_SHOW_MAP, extraObj)
+                            response.send("command $command received")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun checkUri(uri: String): Boolean {
+        if (uri.startsWith("/play"))
+            return true
+        return true
     }
 
     fun getPics(callback: (array: Array<String>) -> Unit) {

@@ -46,6 +46,7 @@ dependencies {
     implementation project(':widget_recyclerview_extentions')
     implementation project(':widget_date_time_picker')
     implementation project(':library_rx_okhttp')
+    implementation 'com.koushikdutta.async:androidasync:2.2.1'
 }
 repositories {
     mavenCentral()
