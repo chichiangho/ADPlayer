@@ -1,5 +1,7 @@
 package com.adplayer.utils
 
+import android.content.Context
+import android.os.PowerManager
 import com.adplayer.bean.ResultJSON
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.toJson
@@ -89,7 +91,14 @@ object ConnectManager : HttpServerRequestCallback {
             }
             COMMAND_REBOOT -> {
                 try {
-                    Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot ")).waitFor() //重启
+//                    Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot")).waitFor() //重启
+                    val pManager = appCtx.getSystemService(Context.POWER_SERVICE) as PowerManager
+                    pManager.reboot("重启")
+//                    val intent2 = Intent(Intent.ACTION_REBOOT)
+//                    intent2.putExtra("nowait", 1)
+//                    intent2.putExtra("interval", 1)
+//                    intent2.putExtra("window", 0)
+//                    appCtx.sendBroadcast(intent2)
                     response.send(ResultJSON())
                 } catch (ex: Exception) {
                     response.send(ResultJSON(ResultJSON.REBOOT_FAILED, "reboot failed: " + ex.message))
