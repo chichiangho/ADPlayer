@@ -61,9 +61,6 @@ class MainActivity : BaseActivity() {
                     ConnectManager.COMMAND_SHOW_MAP -> {
                         showMap(result)
                     }
-                    ConnectManager.COMMAND_UPDATE -> {
-                        initDatas()
-                    }
                     else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
                 }
             }

@@ -12,5 +12,6 @@ class ResultJSON(code: Int = 1000, msg: String = "success") : JSONObject() {
         const val PARAMS_ERROR = 2002
         const val NO_SUCH_COMMAND = 2003
         const val REBOOT_FAILED = 2004
+        const val TYPE_NOT_SUPPORT = 2005
     }
 }

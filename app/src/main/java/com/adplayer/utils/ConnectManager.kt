@@ -3,23 +3,26 @@ package com.adplayer.utils
 import com.adplayer.bean.ResultJSON
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.toJson
+import com.koushikdutta.async.callback.CompletedCallback
+import com.koushikdutta.async.callback.DataCallback
+import com.koushikdutta.async.http.body.MultipartFormDataBody
 import com.koushikdutta.async.http.server.AsyncHttpServer
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse
 import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.*
+
 
 object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_PLAY_BANNER = "playBanner"
     const val COMMAND_PLAY_VIDEO = "playVideo"
     const val COMMAND_TACK_PICTURE = "takePicture"
     const val COMMAND_SHOW_MAP = "showMap"
-    const val COMMAND_UPDATE = "update"
     private const val COMMAND_GET_PICS = "getPics"
     private const val COMMAND_GET_VIDEOS = "getVideos"
-    private const val COMMAND_PUSH_PIC = "pushPic"
-    private const val COMMAND_PUSH_VIDEO = "pushVideo"
+    private const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
 
     private const val PORT_LISTEN_DEFAULT = 8000
@@ -42,11 +45,10 @@ object ConnectManager : HttpServerRequestCallback {
         server.listen(PORT_LISTEN_DEFAULT)
     }
 
-    //http://10.5.7.225:8000/getPics?params={path:%221.mp4%22}
+    //http://10.5.7.225:8000/playVideo?params={path:%221.mp4%22}
     override fun onRequest(request: AsyncHttpServerRequest, response: AsyncHttpServerResponse) {
         val uri = request.path.replace("/", "")
-        val query = request.query
-        val params = JSONObject(query.getString("params"))
+        val params = request.query.getString("params")?.let { JSONObject(it) } ?: JSONObject()
         when (uri) {
             COMMAND_PLAY_BANNER -> {
                 callback?.invoke(COMMAND_PLAY_BANNER, params) {
@@ -86,6 +88,71 @@ object ConnectManager : HttpServerRequestCallback {
                     response.send(ResultJSON(ResultJSON.REBOOT_FAILED, "reboot failed"))
                 }
             }
+            COMMAND_UPLOAD -> {
+                if (request.body !is MultipartFormDataBody) {
+                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR, "params error"))
+                    return
+                }
+                val body = request.body as MultipartFormDataBody
+                val fileUploadHolder = FileUploadHolder()
+                body.multipartCallback = MultipartFormDataBody.MultipartCallback { part ->
+                    val name = part.filename.toLowerCase()
+                    val savePath = if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
+                        PlayManager.getPicDir() + "/" + name
+                    } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
+                            || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
+                            || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
+                            || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
+                        PlayManager.getVideoDir() + "/" + name
+                    } else {
+                        ""
+                    }
+
+                    if (savePath == "") {
+                        response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
+                        return@MultipartCallback
+                    }
+
+                    if (part.isFile) {
+                        body.dataCallback = DataCallback { _, bb ->
+                            if (fileUploadHolder.fileOutPutStream != null) {//已经开始传输文件
+                                try {
+                                    fileUploadHolder.fileOutPutStream?.write(bb.allByteArray)
+                                } catch (e: IOException) {
+                                    e.printStackTrace()
+                                }
+
+                                bb.recycle()
+                            }
+                        }
+                    } else {
+                        if (body.dataCallback == null) {
+                            body.dataCallback = DataCallback { _, _ ->
+                                if (fileUploadHolder.fileName?.isBlank() == true) {
+                                    fileUploadHolder.fileName = name
+                                    fileUploadHolder.recievedFile = File(savePath)
+                                    if (fileUploadHolder.recievedFile?.exists() == true)
+                                        fileUploadHolder.recievedFile?.delete()
+                                    fileUploadHolder.recievedFile?.createNewFile()
+
+                                    var fs: BufferedOutputStream? = null
+                                    try {
+                                        fs = BufferedOutputStream(FileOutputStream(fileUploadHolder.recievedFile))
+                                    } catch (e: FileNotFoundException) {
+                                        e.printStackTrace()
+                                    }
+
+                                    fileUploadHolder.fileOutPutStream = fs
+                                }
+                            }
+                        }
+                    }
+                }
+                request.endCallback = CompletedCallback {
+                    response.send(JSONObject())
+                    fileUploadHolder.fileOutPutStream?.close()
+                }
+            }
             else -> {
                 response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
             }
@@ -98,7 +165,6 @@ object ConnectManager : HttpServerRequestCallback {
             CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
         }
 
-        //网络请求后一定调用
         callback(appCtx.getExternalFilesDir("picture").list().map {
             if (withHeader)
                 PlayManager.getPicDir() + "/" + it
@@ -112,12 +178,23 @@ object ConnectManager : HttpServerRequestCallback {
         appCtx.assets.list("video").forEach {
             CopyUtil.copyAsserts(appCtx, "video/$it", PlayManager.getVideoDir() + "/" + it)
         }
-        //网络请求后一定调用
+
         callback(appCtx.getExternalFilesDir("video").list().map {
             if (withHeader)
                 PlayManager.getVideoDir() + "/" + it
             else
                 it
         }.toTypedArray())
+    }
+
+    internal class FileUploadHolder {
+        var fileName: String? = null
+        var recievedFile: File? = null
+        var fileOutPutStream: BufferedOutputStream? = null
+
+        fun reset() {
+            fileName = null
+            fileOutPutStream = null
+        }
     }
 }
