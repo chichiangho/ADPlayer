@@ -5,6 +5,7 @@ import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.toJson
 import com.koushikdutta.async.callback.CompletedCallback
 import com.koushikdutta.async.callback.DataCallback
+import com.koushikdutta.async.http.body.JSONObjectBody
 import com.koushikdutta.async.http.body.MultipartFormDataBody
 import com.koushikdutta.async.http.server.AsyncHttpServer
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest
@@ -22,7 +23,7 @@ object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_SHOW_MAP = "showMap"
     private const val COMMAND_GET_PICS = "getPics"
     private const val COMMAND_GET_VIDEOS = "getVideos"
-    private const val COMMAND_UPLOAD = "upload"
+    const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
 
     private const val PORT_LISTEN_DEFAULT = 8000
@@ -48,7 +49,13 @@ object ConnectManager : HttpServerRequestCallback {
     //http://10.5.7.225:8000/playVideo?params={path:%221.mp4%22}
     override fun onRequest(request: AsyncHttpServerRequest, response: AsyncHttpServerResponse) {
         val uri = request.path.replace("/", "")
-        val params = request.query.getString("params")?.let { JSONObject(it) } ?: JSONObject()
+        var params = JSONObject()
+        if (request.method == "GET") {
+            params = request.query.getString("params")?.let { JSONObject(it) } ?: JSONObject()
+        } else if (request.method == "POST") {
+            if (request.body is JSONObjectBody)
+                params = (request.body as JSONObjectBody).get()
+        }
         when (uri) {
             COMMAND_PLAY_BANNER -> {
                 callback?.invoke(COMMAND_PLAY_BANNER, params) {
@@ -71,12 +78,12 @@ object ConnectManager : HttpServerRequestCallback {
                 }
             }
             COMMAND_GET_PICS -> {
-                getPics(false) {
+                PlayManager.getPics(false) {
                     response.send(ResultJSON().put("data", JSONArray(it.toJson())))
                 }
             }
             COMMAND_GET_VIDEOS -> {
-                getVideos(false) {
+                PlayManager.getVideos(false) {
                     response.send(ResultJSON().put("data", JSONArray(it.toJson())))
                 }
             }
@@ -85,7 +92,7 @@ object ConnectManager : HttpServerRequestCallback {
                     Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot ")).waitFor() //重启
                     response.send(ResultJSON())
                 } catch (ex: Exception) {
-                    response.send(ResultJSON(ResultJSON.REBOOT_FAILED, "reboot failed"))
+                    response.send(ResultJSON(ResultJSON.REBOOT_FAILED, "reboot failed: " + ex.message))
                 }
             }
             COMMAND_UPLOAD -> {
@@ -95,26 +102,46 @@ object ConnectManager : HttpServerRequestCallback {
                 }
                 val body = request.body as MultipartFormDataBody
                 val fileUploadHolder = FileUploadHolder()
+                var savePath = ""
+                var name = ""
                 body.multipartCallback = MultipartFormDataBody.MultipartCallback { part ->
-                    val name = part.filename.toLowerCase()
-                    val savePath = if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
-                        PlayManager.getPicDir() + "/" + name
-                    } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
-                            || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
-                            || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
-                            || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
-                        PlayManager.getVideoDir() + "/" + name
-                    } else {
-                        ""
-                    }
+                    if (savePath.isBlank()) {
+                        name = part.filename.toLowerCase()
+                        savePath = if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
+                            PlayManager.getPicDir() + "/" + name
+                        } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
+                                || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
+                                || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
+                                || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
+                            PlayManager.getVideoDir() + "/" + name
+                        } else {
+                            ""
+                        }
 
-                    if (savePath == "") {
-                        response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
-                        return@MultipartCallback
+                        if (savePath == "") {
+                            response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
+                            return@MultipartCallback
+                        }
                     }
 
                     if (part.isFile) {
                         body.dataCallback = DataCallback { _, bb ->
+                            if (fileUploadHolder.fileName?.isBlank() != false) {
+                                fileUploadHolder.fileName = name
+                                fileUploadHolder.recievedFile = File(savePath)
+                                if (fileUploadHolder.recievedFile?.exists() == true)
+                                    fileUploadHolder.recievedFile?.delete()
+                                fileUploadHolder.recievedFile?.createNewFile()
+
+                                var fs: BufferedOutputStream? = null
+                                try {
+                                    fs = BufferedOutputStream(FileOutputStream(fileUploadHolder.recievedFile))
+                                } catch (e: FileNotFoundException) {
+                                    e.printStackTrace()
+                                }
+
+                                fileUploadHolder.fileOutPutStream = fs
+                            }
                             if (fileUploadHolder.fileOutPutStream != null) {//已经开始传输文件
                                 try {
                                     fileUploadHolder.fileOutPutStream?.write(bb.allByteArray)
@@ -125,31 +152,16 @@ object ConnectManager : HttpServerRequestCallback {
                                 bb.recycle()
                             }
                         }
-                    } else {
-                        if (body.dataCallback == null) {
-                            body.dataCallback = DataCallback { _, _ ->
-                                if (fileUploadHolder.fileName?.isBlank() == true) {
-                                    fileUploadHolder.fileName = name
-                                    fileUploadHolder.recievedFile = File(savePath)
-                                    if (fileUploadHolder.recievedFile?.exists() == true)
-                                        fileUploadHolder.recievedFile?.delete()
-                                    fileUploadHolder.recievedFile?.createNewFile()
-
-                                    var fs: BufferedOutputStream? = null
-                                    try {
-                                        fs = BufferedOutputStream(FileOutputStream(fileUploadHolder.recievedFile))
-                                    } catch (e: FileNotFoundException) {
-                                        e.printStackTrace()
-                                    }
-
-                                    fileUploadHolder.fileOutPutStream = fs
-                                }
-                            }
-                        }
                     }
                 }
                 request.endCallback = CompletedCallback {
-                    response.send(JSONObject())
+                    if (File(savePath).exists()) {
+                        response.send(ResultJSON())
+                        callback?.invoke(COMMAND_UPLOAD, params) {
+
+                        }
+                    } else
+                        response.send(ResultJSON(10000, "not exist"))
                     fileUploadHolder.fileOutPutStream?.close()
                 }
             }
@@ -157,34 +169,6 @@ object ConnectManager : HttpServerRequestCallback {
                 response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
             }
         }
-    }
-
-    fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
-        //以下为网络请求失败后的备用
-        appCtx.assets.list("pic").forEach {
-            CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
-        }
-
-        callback(appCtx.getExternalFilesDir("picture").list().map {
-            if (withHeader)
-                PlayManager.getPicDir() + "/" + it
-            else
-                it
-        }.toTypedArray())
-    }
-
-    fun getVideos(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
-        //以下为网络请求失败后的备用
-        appCtx.assets.list("video").forEach {
-            CopyUtil.copyAsserts(appCtx, "video/$it", PlayManager.getVideoDir() + "/" + it)
-        }
-
-        callback(appCtx.getExternalFilesDir("video").list().map {
-            if (withHeader)
-                PlayManager.getVideoDir() + "/" + it
-            else
-                it
-        }.toTypedArray())
     }
 
     internal class FileUploadHolder {

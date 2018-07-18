@@ -12,27 +12,49 @@ object PlayManager {
         return appCtx.getExternalFilesDir("picture").absolutePath
     }
 
-    fun getPics(callback: (array: Array<String>) -> Unit) {
+    fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
+        val picDir = getPicDir()
         val list = appCtx.getExternalFilesDir("picture").list().map {
-            getPicDir() + "/" + it
+            if (withHeader)
+                "$picDir/$it"
+            else
+                it
         }.toTypedArray()
         if (list.isEmpty()) {
-            ConnectManager.getPics {
-                callback(it)
+            appCtx.assets.list("pic").forEach {
+                CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
             }
+
+            callback(appCtx.getExternalFilesDir("picture").list().map {
+                if (withHeader)
+                    "$picDir/$it"
+                else
+                    it
+            }.toTypedArray())
         } else {
             callback(list)
         }
     }
 
-    fun getVideos(callback: (array: Array<String>) -> Unit) {
+    fun getVideos(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
+        val videoDir = getVideoDir()
         val list = appCtx.getExternalFilesDir("video").list().map {
-            getVideoDir() + "/" + it
+            if (withHeader)
+                "$videoDir/$it"
+            else
+                it
         }.toTypedArray()
         if (list.isEmpty()) {
-            ConnectManager.getVideos {
-                callback(it)
+            appCtx.assets.list("video").forEach {
+                CopyUtil.copyAsserts(appCtx, "video/$it", PlayManager.getVideoDir() + "/" + it)
             }
+
+            callback(appCtx.getExternalFilesDir("video").list().map {
+                if (withHeader)
+                    "$videoDir/$it"
+                else
+                    it
+            }.toTypedArray())
         } else {
             callback(list)
         }

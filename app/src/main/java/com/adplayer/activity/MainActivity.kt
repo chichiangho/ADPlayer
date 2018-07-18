@@ -61,6 +61,9 @@ class MainActivity : BaseActivity() {
                     ConnectManager.COMMAND_SHOW_MAP -> {
                         showMap(result)
                     }
+                    ConnectManager.COMMAND_UPLOAD -> {
+                        initDatas()
+                    }
                     else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
                 }
             }
@@ -114,7 +117,7 @@ class MainActivity : BaseActivity() {
         video.visibility = View.VISIBLE
         val uri = Uri.parse(path)
         video.setVideoURI(uri)
-        video.setMediaController(MediaController(this@MainActivity))//显示控制栏
+//        video.setMediaController(MediaController(this@MainActivity))//显示控制栏
         video.setOnPreparedListener {
             video.start()
         }
