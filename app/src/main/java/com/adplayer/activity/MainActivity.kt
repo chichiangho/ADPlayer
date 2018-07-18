@@ -8,8 +8,10 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.MediaController
 import com.adplayer.R
+import com.adplayer.bean.ResultJSON
+import com.adplayer.bean.ResultJSON.Companion.NO_SUCH_FILE
+import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.utils.ConnectManager
-import com.adplayer.utils.CopyUtil
 import com.adplayer.utils.PlayManager
 import com.bumptech.glide.Glide
 import com.chichiangho.common.base.BaseActivity
@@ -38,29 +40,38 @@ class MainActivity : BaseActivity() {
                 .start()
 
         ConnectManager.init()
-        ConnectManager.registerCommandListener { command, extra ->
+        ConnectManager.registerCommandListener { command, params, result ->
             runOnUiThread {
                 when (command) {
                     ConnectManager.COMMAND_PLAY_BANNER -> {
-                        if (extra?.has("path") == true)
-                            playBanner(extra.optString("path"))
+                        if (params?.has("path") == true)
+                            result(playBanner(params.optString("path")))
+                        else
+                            result(ResultJSON(PARAMS_ERROR, "params error"))
                     }
                     ConnectManager.COMMAND_PLAY_VIDEO -> {
-                        if (extra?.has("path") == true)
-                            playVideo(extra.optString("path"))
+                        if (params?.has("path") == true)
+                            result(playVideo(params.optString("path")))
+                        else
+                            result(ResultJSON(PARAMS_ERROR, "params error"))
                     }
                     ConnectManager.COMMAND_TACK_PICTURE -> {
-                        takePic()
+                        takePic(result)
                     }
                     ConnectManager.COMMAND_SHOW_MAP -> {
-
+                        showMap(result)
                     }
                     ConnectManager.COMMAND_UPDATE -> {
                         initDatas()
                     }
+                    else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
                 }
             }
         }
+    }
+
+    private fun showMap(result: (result: ResultJSON) -> Unit) {
+
     }
 
     private fun initDatas() {
@@ -90,17 +101,17 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun takePic() {
+    private fun takePic(result: (result: ResultJSON) -> Unit) {
 
     }
 
-    private fun playVideo(name: String) {
+    private fun playVideo(name: String): ResultJSON {
         val path = PlayManager.getVideoDir() + "/" + name
         if (!videoList.contains(path)) {
-            return
+            return ResultJSON(NO_SUCH_FILE, "no such file")
         }
         if (!File(path).exists())
-            return
+            return ResultJSON(NO_SUCH_FILE, "no such file")
 
         banner.visibility = View.GONE
         video.visibility = View.VISIBLE
@@ -113,19 +124,21 @@ class MainActivity : BaseActivity() {
         video.setOnCompletionListener {
             playBanner("")
         }
+        return ResultJSON()
     }
 
-    private fun playBanner(name: String) {
+    private fun playBanner(name: String): ResultJSON {
         val path = PlayManager.getPicDir() + "/" + name
         if (!name.isEmpty() && !videoList.contains(path)) {
-            return
+            return ResultJSON(NO_SUCH_FILE, "no such file")
         }
         if (!File(path).exists())
-            return
+            return ResultJSON(NO_SUCH_FILE, "no such file")
 
         video.visibility = View.GONE
         banner.visibility = View.VISIBLE
         video.pause()
         banner.start()
+        return ResultJSON()
     }
 }
