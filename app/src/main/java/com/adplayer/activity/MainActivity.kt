@@ -44,13 +44,13 @@ class MainActivity : BaseActivity() {
             runOnUiThread {
                 when (command) {
                     ConnectManager.COMMAND_PLAY_BANNER -> {
-                        if (params?.has("path") == true)
+                        if (params.has("path"))
                             result(playBanner(params.optString("path")))
                         else
                             result(ResultJSON(PARAMS_ERROR, "params error"))
                     }
                     ConnectManager.COMMAND_PLAY_VIDEO -> {
-                        if (params?.has("path") == true)
+                        if (params.has("path"))
                             result(playVideo(params.optString("path")))
                         else
                             result(ResultJSON(PARAMS_ERROR, "params error"))
@@ -61,7 +61,7 @@ class MainActivity : BaseActivity() {
                     ConnectManager.COMMAND_SHOW_MAP -> {
                         showMap(result)
                     }
-                    ConnectManager.COMMAND_UPLOAD -> {
+                    ConnectManager.REFRESH -> {
                         initDatas()
                     }
                     else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))

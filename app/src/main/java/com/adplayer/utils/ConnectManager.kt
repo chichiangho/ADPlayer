@@ -25,16 +25,19 @@ object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_SHOW_MAP = "showMap"
     private const val COMMAND_GET_PICS = "getPics"
     private const val COMMAND_GET_VIDEOS = "getVideos"
-    const val COMMAND_UPLOAD = "upload"
+    private const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
+    private const val COMMAND_DELETE = "delete"
+
+    const val REFRESH = "refresh"
 
     private const val PORT_LISTEN_DEFAULT = 8000
 
     private var server = AsyncHttpServer()
 
-    private var callback: ((command: String, params: JSONObject?, (result: ResultJSON) -> Unit) -> Unit)? = null
+    private var callback: ((command: String, params: JSONObject, (result: ResultJSON) -> Unit) -> Unit)? = null
 
-    fun registerCommandListener(callback: (command: String, params: JSONObject?, (result: ResultJSON) -> Unit) -> Unit) {
+    fun registerCommandListener(callback: (command: String, params: JSONObject, (result: ResultJSON) -> Unit) -> Unit) {
         this.callback = callback
     }
 
@@ -89,6 +92,22 @@ object ConnectManager : HttpServerRequestCallback {
                     response.send(ResultJSON().put("data", JSONArray(it.toJson())))
                 }
             }
+            COMMAND_DELETE -> {
+                if (params.has("path")) {
+                    val path = getPath(params.optString("path"))
+                    if (path == "") {
+                        response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
+                    } else {
+                        File(path).delete()
+                        callback?.invoke(REFRESH, params) {
+
+                        }
+                        response.send(ResultJSON())
+                    }
+                } else {
+                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR, "params error"))
+                }
+            }
             COMMAND_REBOOT -> {
                 try {
 //                    Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot")).waitFor() //重启
@@ -116,16 +135,7 @@ object ConnectManager : HttpServerRequestCallback {
                 body.multipartCallback = MultipartFormDataBody.MultipartCallback { part ->
                     if (savePath.isBlank()) {
                         name = part.filename.toLowerCase()
-                        savePath = if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
-                            PlayManager.getPicDir() + "/" + name
-                        } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
-                                || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
-                                || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
-                                || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
-                            PlayManager.getVideoDir() + "/" + name
-                        } else {
-                            ""
-                        }
+                        savePath = getPath(name)
 
                         if (savePath == "") {
                             response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
@@ -166,7 +176,7 @@ object ConnectManager : HttpServerRequestCallback {
                 request.endCallback = CompletedCallback {
                     if (File(savePath).exists()) {
                         response.send(ResultJSON())
-                        callback?.invoke(COMMAND_UPLOAD, params) {
+                        callback?.invoke(REFRESH, params) {
 
                         }
                     } else
@@ -177,6 +187,19 @@ object ConnectManager : HttpServerRequestCallback {
             else -> {
                 response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
             }
+        }
+    }
+
+    fun getPath(name: String): String {
+        return if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
+            PlayManager.getPicDir() + "/" + name
+        } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
+                || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
+                || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
+                || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
+            PlayManager.getVideoDir() + "/" + name
+        } else {
+            ""
         }
     }
 
