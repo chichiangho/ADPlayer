@@ -17,7 +17,7 @@ class CirclePLayer : FrameLayout {
     val pic1 = PicFragment()
     val pic2 = PicFragment()
     val video = VideoFragment()
-    lateinit var cur: Fragment
+    var cur: Fragment? = null
 
     constructor(context: Context) : super(context)
 
@@ -50,6 +50,8 @@ class CirclePLayer : FrameLayout {
             if (sourceList.size == 0)
                 return
             val path = sourceList[0]
+            if (cur == null)
+                cur = pic1
             play(path)
         }
     }
