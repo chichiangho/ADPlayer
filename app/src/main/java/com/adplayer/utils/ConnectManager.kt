@@ -94,7 +94,7 @@ object ConnectManager : HttpServerRequestCallback {
             }
             COMMAND_DELETE -> {
                 if (params.has("path")) {
-                    val path = getPath(params.optString("path"))
+                    val path = PlayManager.getPath(params.optString("path"))
                     if (path == "") {
                         response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
                     } else {
@@ -135,7 +135,7 @@ object ConnectManager : HttpServerRequestCallback {
                 body.multipartCallback = MultipartFormDataBody.MultipartCallback { part ->
                     if (savePath.isBlank()) {
                         name = part.filename.toLowerCase()
-                        savePath = getPath(name)
+                        savePath = PlayManager.getPath(name)
 
                         if (savePath == "") {
                             response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
@@ -187,19 +187,6 @@ object ConnectManager : HttpServerRequestCallback {
             else -> {
                 response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
             }
-        }
-    }
-
-    fun getPath(name: String): String {
-        return if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
-            PlayManager.getPicDir() + "/" + name
-        } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
-                || name.endsWith(".mpeg1") || name.endsWith(".mpeg2") || name.endsWith(".mpeg3") || name.endsWith(".mpeg4")
-                || name.endsWith(".mov") || name.endsWith(".mtv") || name.endsWith(".dat") || name.endsWith(".wmv")
-                || name.endsWith(".avi") || name.endsWith(".3gp") || name.endsWith(".amv") || name.endsWith(".dmv")) {
-            PlayManager.getVideoDir() + "/" + name
-        } else {
-            ""
         }
     }
 

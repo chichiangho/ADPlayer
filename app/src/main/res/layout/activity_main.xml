@@ -4,13 +4,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.youth.banner.Banner
-        android:id="@+id/banner"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <VideoView
-        android:id="@+id/video"
+    <com.adplayer.fragment.CirclePLayer
+        android:id="@+id/circle_player"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </LinearLayout>
