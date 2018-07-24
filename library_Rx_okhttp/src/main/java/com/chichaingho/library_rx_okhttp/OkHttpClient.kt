@@ -160,7 +160,6 @@ object OkHttpClient {
                 } else {
                     logD(TAG, "upload $path failure")
                     listener?.onProgress(-1, Exception(response.message()))
-
                 }
             }
         })

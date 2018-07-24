@@ -1,9 +1,6 @@
 package com.adplayer.utils
 
-import android.content.Context
-import android.os.PowerManager
 import com.adplayer.bean.ResultJSON
-import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.toJson
 import com.koushikdutta.async.callback.CompletedCallback
 import com.koushikdutta.async.callback.DataCallback
@@ -16,11 +13,13 @@ import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
+import com.chichiangho.common.base.BaseApplication
+import android.text.TextUtils
+import com.koushikdutta.async.http.server.AsyncHttpServerRequestImpl
 
 
 object ConnectManager : HttpServerRequestCallback {
-    const val COMMAND_PLAY_BANNER = "playBanner"
-    const val COMMAND_PLAY_VIDEO = "playVideo"
+    const val COMMAND_PLAY = "play"
     const val COMMAND_TACK_PICTURE = "takePicture"
     const val COMMAND_SHOW_MAP = "showMap"
     private const val COMMAND_GET_PICS = "getPics"
@@ -63,23 +62,8 @@ object ConnectManager : HttpServerRequestCallback {
                 params = (request.body as JSONObjectBody).get()
         }
         when (uri) {
-            COMMAND_PLAY_BANNER -> {
-                callback?.invoke(COMMAND_PLAY_BANNER, params) {
-                    response.send(it)
-                }
-            }
-            COMMAND_PLAY_VIDEO -> {
-                callback?.invoke(COMMAND_PLAY_VIDEO, params) {
-                    response.send(it)
-                }
-            }
-            COMMAND_TACK_PICTURE -> {
-                callback?.invoke(COMMAND_TACK_PICTURE, params) {
-                    response.send(it)
-                }
-            }
-            COMMAND_SHOW_MAP -> {
-                callback?.invoke(COMMAND_SHOW_MAP, params) {
+            COMMAND_PLAY -> {
+                callback?.invoke(COMMAND_PLAY, params) {
                     response.send(it)
                 }
             }
@@ -97,29 +81,50 @@ object ConnectManager : HttpServerRequestCallback {
                 if (params.has("path")) {
                     val path = PlayManager.getPath(params.optString("path"))
                     if (path == "") {
-                        response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
+                        response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT))
                     } else {
                         File(path).delete()
-                        callback?.invoke(REFRESH, params) {
-
-                        }
+                        callback?.invoke(REFRESH, params) {}
                         response.send(ResultJSON())
                     }
                 } else {
-                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR, "params error"))
+                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR))
                 }
             }
             COMMAND_REBOOT -> {
-               response.send(TurnOnOffManager.reboot())
+                response.send(TurnOnOffManager.reboot())
             }
             COMMAND_SET_AUTO_TURN_ON_OFF -> {
                 val turnOn = params.optString("turnOn")
                 val turnOff = params.optString("turnOff")
                 response.send(TurnOnOffManager.setOnOff(turnOn, turnOff))
             }
+            COMMAND_TACK_PICTURE -> {
+                callback?.invoke(COMMAND_TACK_PICTURE, params) {
+                    if (it.get("code") == ResultJSON.TAKE_PIC) {
+                        try {
+                            val fullPath = it.optString("msg")
+                            response.setContentType("application/x-png")
+                            val bInputStream = BufferedInputStream(File(fullPath).inputStream())
+                            response.sendStream(bInputStream, bInputStream.available().toLong())
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                            response.send(ResultJSON(3000, e.message
+                                    ?: "image file download failed"))
+                        }
+                    } else {
+                        response.send(it)
+                    }
+                }
+            }
+            COMMAND_SHOW_MAP -> {
+                callback?.invoke(COMMAND_SHOW_MAP, params) {
+                    response.send(it)
+                }
+            }
             COMMAND_UPLOAD -> {
                 if (request.body !is MultipartFormDataBody) {
-                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR, "params error"))
+                    response.send(ResultJSON(ResultJSON.PARAMS_ERROR))
                     return
                 }
                 val body = request.body as MultipartFormDataBody
@@ -131,8 +136,8 @@ object ConnectManager : HttpServerRequestCallback {
                         name = part.filename.toLowerCase()
                         savePath = PlayManager.getPath(name)
 
-                        if (savePath == "") {
-                            response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "file type not support"))
+                        if (savePath.isBlank()) {
+                            response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT))
                             return@MultipartCallback
                         }
                     }
@@ -174,12 +179,12 @@ object ConnectManager : HttpServerRequestCallback {
 
                         }
                     } else
-                        response.send(ResultJSON(10000, "not exist"))
+                        response.send(ResultJSON(ResultJSON.UPLOAD_FAILED))
                     fileUploadHolder.fileOutPutStream?.close()
                 }
             }
             else -> {
-                response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
+                response.send(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
             }
         }
     }
@@ -188,10 +193,5 @@ object ConnectManager : HttpServerRequestCallback {
         var fileName: String? = null
         var recievedFile: File? = null
         var fileOutPutStream: BufferedOutputStream? = null
-
-        fun reset() {
-            fileName = null
-            fileOutPutStream = null
-        }
     }
 }

@@ -80,9 +80,9 @@ object PlayManager {
     fun getPath(name: String): String {
         return when (getType(name)) {
             TYPE_PIC ->
-                PlayManager.getPicDir() + "/" + name
+                getPicDir() + "/" + name
             TYPE_VIDEO ->
-                PlayManager.getVideoDir() + "/" + name
+                getVideoDir() + "/" + name
             else -> ""
         }
     }

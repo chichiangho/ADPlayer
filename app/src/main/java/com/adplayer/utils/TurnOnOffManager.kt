@@ -13,9 +13,9 @@ object TurnOnOffManager {
 
     fun reboot(): ResultJSON {
         return try {
-//                    Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot")).waitFor() //重启
-            val pManager = appCtx.getSystemService(Context.POWER_SERVICE) as PowerManager
-            pManager.reboot("重启")
+            Runtime.getRuntime().exec(arrayOf("su", "-c", "reboot")).waitFor() //重启
+//            val pManager = appCtx.getSystemService(Context.POWER_SERVICE) as PowerManager
+//            pManager.reboot("重启")
 //                    val intent2 = Intent(Intent.ACTION_REBOOT)
 //                    intent2.putExtra("nowait", 1)
 //                    intent2.putExtra("interval", 1)

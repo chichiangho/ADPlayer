@@ -9,8 +9,8 @@ import com.adplayer.fragment.CirclePLayer
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
 import com.chichiangho.common.base.BaseActivity
+import com.chichiangho.common.extentions.getTime
 import com.yanzhenjie.permission.AndPermission
-import java.io.File
 
 
 class MainActivity : BaseActivity() {
@@ -21,6 +21,10 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        if (System.currentTimeMillis() > "2018-09-01 00:00:00".getTime())
+            finish()
+
         circlePLayer = findViewById(R.id.circle_player)
         circlePLayer.setDelay(5000).init(fragmentManager)
 
@@ -37,17 +41,11 @@ class MainActivity : BaseActivity() {
         ConnectManager.registerCommandListener { command, params, result ->
             runOnUiThread {
                 when (command) {
-                    ConnectManager.COMMAND_PLAY_BANNER -> {
+                    ConnectManager.COMMAND_PLAY -> {
                         if (params.has("path"))
-                            result(playBanner(params.optString("path"), params.optString("text")))
+                            result(play(params.optString("path"), params.optString("text")))
                         else
-                            result(ResultJSON(PARAMS_ERROR, "params error"))
-                    }
-                    ConnectManager.COMMAND_PLAY_VIDEO -> {
-                        if (params.has("path"))
-                            result(playVideo(params.optString("path"), params.optString("text")))
-                        else
-                            result(ResultJSON(PARAMS_ERROR, "params error"))
+                            result(ResultJSON(PARAMS_ERROR))
                     }
                     ConnectManager.COMMAND_TACK_PICTURE -> {
                         takePic(result)
@@ -58,14 +56,13 @@ class MainActivity : BaseActivity() {
                     ConnectManager.REFRESH -> {
                         initDatas()
                     }
-                    else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND, "no such command"))
+                    else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
                 }
             }
         }
     }
 
     private fun showMap(result: (result: ResultJSON) -> Unit) {
-
     }
 
     private fun initDatas() {
@@ -81,16 +78,13 @@ class MainActivity : BaseActivity() {
     }
 
     private fun takePic(result: (result: ResultJSON) -> Unit) {
-
+        result(ResultJSON(ResultJSON.TAKE_PIC, PlayManager.getPicDir() + "/1.png"))
     }
 
-    private fun playVideo(name: String, text: String): ResultJSON {
-        val path = PlayManager.getVideoDir() + "/" + name
-        return circlePLayer.play(path, text)
-    }
-
-    private fun playBanner(name: String, text: String): ResultJSON {
-        val path = PlayManager.getPicDir() + "/" + name
+    private fun play(name: String, text: String): ResultJSON {
+        val path = PlayManager.getPath(name)
+        if (path.isBlank())
+            return ResultJSON(ResultJSON.TYPE_NOT_SUPPORT)
         return circlePLayer.play(path, text)
     }
 }
