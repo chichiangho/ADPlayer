@@ -13,9 +13,6 @@ import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
-import com.chichiangho.common.base.BaseApplication
-import android.text.TextUtils
-import com.koushikdutta.async.http.server.AsyncHttpServerRequestImpl
 
 
 object ConnectManager : HttpServerRequestCallback {
@@ -58,8 +55,9 @@ object ConnectManager : HttpServerRequestCallback {
         if (request.method == "GET") {
             params = request.query.getString("params")?.let { JSONObject(it) } ?: JSONObject()
         } else if (request.method == "POST") {
-            if (request.body is JSONObjectBody)
-                params = (request.body as JSONObjectBody).get()
+            (request.body as? JSONObjectBody)?.get()?.let {
+                params = it
+            }
         }
         when (uri) {
             COMMAND_PLAY -> {
