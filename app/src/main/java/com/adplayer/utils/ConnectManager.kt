@@ -107,11 +107,11 @@ object ConnectManager : HttpServerRequestCallback {
                             response.sendStream(bInputStream, bInputStream.available().toLong())
                         } catch (e: IOException) {
                             e.printStackTrace()
-                            response.send(ResultJSON(3000, e.message
-                                    ?: "image file download failed"))
+//                            response.send(ResultJSON(3000, e.message
+//                                    ?: "image file download failed"))
                         }
                     } else {
-                        response.send(it)
+//                        response.send(it)
                     }
                 }
             }

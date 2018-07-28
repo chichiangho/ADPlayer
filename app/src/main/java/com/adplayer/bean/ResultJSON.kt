@@ -13,6 +13,7 @@ class ResultJSON(code: Int = 1000, msg: String = "") : JSONObject() {
                 REBOOT_FAILED -> put("msg", "reboot failed")
                 TYPE_NOT_SUPPORT -> put("msg", "file type not support")
                 UPLOAD_FAILED -> put("msg", "upload file failed")
+                CAMERA_NOT_READY -> put("msg", "camera not ready yet")
                 else -> put("msg", msg)
             }
         } else {
@@ -28,5 +29,6 @@ class ResultJSON(code: Int = 1000, msg: String = "") : JSONObject() {
         const val TYPE_NOT_SUPPORT = 2005
         const val UPLOAD_FAILED = 2006
         const val TAKE_PIC = 1283//专为拍照后传递照片地址使用
+        const val CAMERA_NOT_READY = 1284
     }
 }
