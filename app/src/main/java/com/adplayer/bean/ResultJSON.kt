@@ -7,6 +7,7 @@ class ResultJSON(code: Int = 1000, msg: String = "") : JSONObject() {
         put("code", code)
         if (msg.isBlank()) {
             when (code) {
+                1000 -> put("msg", "success")
                 NO_SUCH_FILE -> put("msg", "no such file")
                 PARAMS_ERROR -> put("msg", "params error")
                 NO_SUCH_COMMAND -> put("msg", "no such command")
