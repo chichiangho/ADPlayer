@@ -1,29 +1,26 @@
 package com.adplayer.activity
 
 import android.Manifest
-import android.graphics.BitmapFactory
-import android.graphics.PixelFormat
+import android.app.Activity
+import android.graphics.*
 import android.hardware.Camera
-import android.hardware.Camera.PictureCallback
 import android.os.Bundle
-import android.os.Handler
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.fragment.CirclePLayer
+import com.adplayer.receiver.OnLineReceiver
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.getTime
+import com.chichiangho.common.extentions.screenWidth
 import com.yanzhenjie.permission.AndPermission
-import java.io.File
-import android.graphics.Bitmap
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
 
 
 class MainActivity : BaseActivity() {
@@ -58,16 +55,22 @@ class MainActivity : BaseActivity() {
                     val mPreviewHeight = parameters.previewSize.height
                     val mPreviewWidth = parameters.previewSize.width
                     parameters.setPreviewSize(mPreviewWidth, mPreviewHeight)
-                    parameters.setPictureSize(mPreviewWidth, mPreviewHeight)
+
+                    for (x in parameters.supportedPictureSizes) {
+                        if (x.width >= screenWidth) {
+                            parameters.setPictureSize(x.width, x.height)
+                            break
+                        }
+                    }
 
                     it.parameters = parameters
                 }
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder?) {
-                mCamera?.stopPreview()
-                mCamera?.unlock()
-                mCamera?.release()
+//                mCamera?.stopPreview()
+//                mCamera?.unlock()
+//                mCamera?.release()
             }
 
             override fun surfaceCreated(holder: SurfaceHolder?) {
@@ -78,9 +81,12 @@ class MainActivity : BaseActivity() {
                         Camera.getCameraInfo(i, cameraInfo)
                         if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {//前置摄像头
                             mCamera = Camera.open(i)
-                            mCamera?.setPreviewDisplay(holder)
-                            mCamera?.setDisplayOrientation(0)
-                            mCamera?.startPreview()
+                            mCamera?.let {
+                                it.setPreviewDisplay(holder)
+                                setCameraDisplayOrientation(this@MainActivity, i, it)
+                                it.setDisplayOrientation(0)
+                                it.startPreview()
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -100,6 +106,12 @@ class MainActivity : BaseActivity() {
                 .start()
 
         ConnectManager.init()
+        OnLineReceiver.addOnLineListener(object : OnLineReceiver.ChangeListener {
+            override fun onLine() {
+                ConnectManager.stop()
+                ConnectManager.init()
+            }
+        })
         ConnectManager.registerCommandListener { command, params, result ->
             runOnUiThread {
                 when (command) {
@@ -148,9 +160,19 @@ class MainActivity : BaseActivity() {
         taking = true
         val path = appCtx.getExternalFilesDir("takePhoto").absolutePath + "/" + System.currentTimeMillis() + ".png"
 
-        mCamera?.takePicture(null, null, PictureCallback { data, camera ->
-            camera.startPreview()
-            val source = BitmapFactory.decodeByteArray(data, 0, data.size)
+        mCamera?.setOneShotPreviewCallback { bytes: ByteArray, camera: Camera ->
+            val size = camera.parameters.previewSize // 获取预览大小，若生成图片给的高宽和预览的高宽不一致，会导致生成的预览图出现花图的现象
+            val w = size.width // 宽度
+            val h = size.height
+            val image = YuvImage(bytes, ImageFormat.NV21, w, h, null)
+            val os = ByteArrayOutputStream()
+
+            if (!image.compressToJpeg(Rect(0, 0, w, h), 100, os)) {
+                return@setOneShotPreviewCallback
+            }
+            val temp = os.toByteArray()
+
+            val source = BitmapFactory.decodeByteArray(temp, 0, temp.size)
             val file = File(path)
             if (!file.exists())
                 file.createNewFile()
@@ -172,7 +194,7 @@ class MainActivity : BaseActivity() {
             }
             taking = false
             file.delete()
-        }) ?: let {
+        } ?: let {
             result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
         }
     }
@@ -182,5 +204,27 @@ class MainActivity : BaseActivity() {
         if (path.isBlank())
             return ResultJSON(ResultJSON.TYPE_NOT_SUPPORT)
         return circlePLayer.play(path, text)
+    }
+
+    private fun setCameraDisplayOrientation(activity: Activity, cameraId: Int, camera: android.hardware.Camera) {
+        val info = android.hardware.Camera.CameraInfo()
+        android.hardware.Camera.getCameraInfo(cameraId, info)
+        val rotation = activity.windowManager.defaultDisplay.rotation
+        var degrees = 0
+        when (rotation) {
+            Surface.ROTATION_0 -> degrees = 0
+            Surface.ROTATION_90 -> degrees = 90
+            Surface.ROTATION_180 -> degrees = 180
+            Surface.ROTATION_270 -> degrees = 270
+        }
+        var result: Int
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360
+            result = (360 - result) % 360   // compensate the mirror
+        } else {
+            // back-facing
+            result = (info.orientation - degrees + 360) % 360
+        }
+        camera.setDisplayOrientation(result)
     }
 }

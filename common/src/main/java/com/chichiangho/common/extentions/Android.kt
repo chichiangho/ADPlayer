@@ -8,6 +8,7 @@ import android.os.Looper
 import android.preference.PreferenceManager
 import android.support.annotation.ColorRes
 import android.support.annotation.DimenRes
+import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.widget.Toast
 import com.chichiangho.common.base.BaseApplication
@@ -17,6 +18,18 @@ import kotlin.collections.HashMap
 
 val appCtx: Context
     get() = BaseApplication.instance
+
+var screenWidth: Int = 0
+    get() {
+        if (field == 0) {
+            val dm = DisplayMetrics()
+            getTopActivity()?.let {
+                it.windowManager.defaultDisplay.getMetrics(dm)
+                field = dm.widthPixels
+            }
+        }
+        return field
+    }
 
 fun getTopActivity(): Activity? = BaseApplication.instance.getTopActivity()
 

@@ -1,5 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:sharedUserId="android.uid.system"
     package="com.adplayer">    <!--android:sharedUserId="android.uid.system"-->
 
 
@@ -13,8 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SHUTDOWN"/>
-    <uses-permission android:name="android.permission.REBOOT" />
+    <!--<uses-permission android:name="android.permission.SHUTDOWN"/>-->
+    <!--<uses-permission android:name="android.permission.REBOOT" />-->
 
     <application
         android:name="com.chichiangho.common.base.BaseApplication"
@@ -31,13 +30,19 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".activity.MainActivity" />
+        <activity android:name=".activity.MainActivity" />
 
         <receiver android:name=".receiver.AutoStartReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".receiver.OnLineReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
     </application>

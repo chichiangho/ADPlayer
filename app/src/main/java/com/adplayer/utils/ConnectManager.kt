@@ -48,6 +48,10 @@ object ConnectManager : HttpServerRequestCallback {
         server.listen(PORT_LISTEN_DEFAULT)
     }
 
+    fun stop(){
+        server.stop()
+    }
+
     //http://10.5.7.225:8000/playVideo?params={path:%221.mp4%22}
     override fun onRequest(request: AsyncHttpServerRequest, response: AsyncHttpServerResponse) {
         val uri = request.path.replace("/", "")
