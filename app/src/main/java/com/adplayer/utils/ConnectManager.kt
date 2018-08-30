@@ -18,7 +18,6 @@ import java.io.*
 object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_PLAY = "play"
     const val COMMAND_TACK_PICTURE = "takePicture"
-    const val COMMAND_SHOW_MAP = "showMap"
     private const val COMMAND_GET_PICS = "getPics"
     private const val COMMAND_GET_VIDEOS = "getVideos"
     private const val COMMAND_IS_ONLINE = "isOnline"
@@ -121,11 +120,6 @@ object ConnectManager : HttpServerRequestCallback {
                     } else {
                         response.send(it)
                     }
-                }
-            }
-            COMMAND_SHOW_MAP -> {
-                callback?.invoke(COMMAND_SHOW_MAP, params) {
-                    response.send(it)
                 }
             }
             COMMAND_UPLOAD -> {

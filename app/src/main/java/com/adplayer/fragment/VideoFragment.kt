@@ -2,6 +2,9 @@ package com.adplayer.fragment
 
 import android.app.Fragment
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.media.MediaMetadataRetriever
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,11 +12,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.VideoView
 import com.adplayer.R
-import android.media.MediaPlayer
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.media.MediaMetadataRetriever
+import com.chichiangho.common.extentions.io_main
+import io.reactivex.Observable
+import java.util.concurrent.TimeUnit
 
 
 class VideoFragment : Fragment() {
@@ -53,5 +54,11 @@ class VideoFragment : Fragment() {
     fun stop() {
         if (video.isPlaying)
             video.pause()
+        Observable.timer(300, TimeUnit.MILLISECONDS)
+                .io_main()
+                .subscribe {
+                    if (video.isPlaying)
+                        video.pause()
+                }
     }
 }

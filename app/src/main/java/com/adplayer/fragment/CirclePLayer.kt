@@ -56,6 +56,13 @@ class CirclePLayer : FrameLayout {
         }
     }
 
+    fun stop() {
+        if (cur is VideoFragment)
+            (cur as? VideoFragment)?.stop()
+        else if (cur is PicFragment)
+            (cur as? PicFragment)?.dispose()
+    }
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 

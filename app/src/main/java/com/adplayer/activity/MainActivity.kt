@@ -4,15 +4,16 @@ import android.app.Activity
 import android.graphics.*
 import android.hardware.Camera
 import android.os.Bundle
-import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import android.os.Handler
+import android.view.*
+import android.widget.ImageView
 import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.fragment.CirclePLayer
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
+import com.bumptech.glide.Glide
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.getTime
@@ -24,15 +25,17 @@ class MainActivity : BaseActivity() {
     private val sourceList = ArrayList<String>()
 
     private lateinit var circlePLayer: CirclePLayer
+    private lateinit var mapView: ImageView
     private var mCamera: Camera? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        if (System.currentTimeMillis() > "2018-09-01 00:00:00".getTime())
+        if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
             finish()
 
+        mapView = findViewById(R.id.mapView)
         circlePLayer = findViewById(R.id.circle_player)
         circlePLayer.setDelay(5000).init(fragmentManager)
 
@@ -121,9 +124,6 @@ class MainActivity : BaseActivity() {
                     ConnectManager.COMMAND_TACK_PICTURE -> {
                         takePic(result)
                     }
-                    ConnectManager.COMMAND_SHOW_MAP -> {
-                        showMap(result)
-                    }
                     ConnectManager.REFRESH -> {
                         initDatas()
                     }
@@ -133,7 +133,31 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun showMap(result: (result: ResultJSON) -> Unit) {
+    override fun onDestroy() {
+        ConnectManager.stop()
+        super.onDestroy()
+    }
+
+    private var lastTouchTime = 0L
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == 259 && System.currentTimeMillis() - lastTouchTime > 1000) {//地图触摸按键
+            lastTouchTime = System.currentTimeMillis()
+            showMap()
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun showMap() {
+        if (File(PlayManager.getMapPath()).exists()) {
+            mapView.visibility = View.VISIBLE
+            circlePLayer.stop()
+            Glide.with(this).load(PlayManager.getMapPath()).into(mapView)
+            Handler().postDelayed({
+                mapView.visibility = View.GONE
+                circlePLayer.start()
+            }, 10000)
+        }
     }
 
     private fun initDatas() {
