@@ -81,7 +81,7 @@ class MainActivity : BaseActivity() {
                             mCamera?.let {
                                 it.setPreviewDisplay(holder)
                                 setCameraDisplayOrientation(this@MainActivity, i, it)
-                                it.setDisplayOrientation(0)
+                                it.setDisplayOrientation(90)
                                 it.startPreview()
                             }
                         }
@@ -157,41 +157,53 @@ class MainActivity : BaseActivity() {
         taking = true
         val path = appCtx.getExternalFilesDir("takePhoto").absolutePath + "/" + System.currentTimeMillis() + ".png"
 
-        mCamera?.setOneShotPreviewCallback { bytes: ByteArray, camera: Camera ->
-            val size = camera.parameters.previewSize // 获取预览大小，若生成图片给的高宽和预览的高宽不一致，会导致生成的预览图出现花图的现象
-            val w = size.width // 宽度
-            val h = size.height
-            val image = YuvImage(bytes, ImageFormat.NV21, w, h, null)
-            val os = ByteArrayOutputStream()
+        try {
+            mCamera?.setOneShotPreviewCallback { bytes: ByteArray, camera: Camera ->
+                val size = camera.parameters.previewSize // 获取预览大小，若生成图片给的高宽和预览的高宽不一致，会导致生成的预览图出现花图的现象
+                val w = size.width // 宽度
+                val h = size.height
+                val image = YuvImage(bytes, ImageFormat.NV21, w, h, null)
+                val os = ByteArrayOutputStream()
 
-            if (!image.compressToJpeg(Rect(0, 0, w, h), 100, os)) {
-                return@setOneShotPreviewCallback
-            }
-            val temp = os.toByteArray()
-
-            val source = BitmapFactory.decodeByteArray(temp, 0, temp.size)
-            val file = File(path)
-            if (!file.exists())
-                file.createNewFile()
-            var out: FileOutputStream? = null
-            try {
-                out = FileOutputStream(file)
-                source.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                result(ResultJSON(ResultJSON.TAKE_PIC, path))
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-                result(ResultJSON(ResultJSON.NO_SUCH_FILE))
-            } finally {
-                try {
-                    out?.flush()
-                    out?.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                if (!image.compressToJpeg(Rect(0, 0, w, h), 100, os)) {
+                    return@setOneShotPreviewCallback
                 }
+                val temp = os.toByteArray()
+
+                val source1 = BitmapFactory.decodeByteArray(temp, 0, temp.size)
+
+                val matrix = Matrix()
+                matrix.postRotate(-90F)
+                val source = Bitmap.createBitmap(source1, 0, 0, source1.width, source1.height, matrix, true)
+
+                val file = File(path)
+                if (!file.exists())
+                    file.createNewFile()
+                var out: FileOutputStream? = null
+                try {
+                    out = FileOutputStream(file)
+                    source.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                    result(ResultJSON(ResultJSON.TAKE_PIC, path))
+                } catch (e: FileNotFoundException) {
+                    e.printStackTrace()
+                    result(ResultJSON(ResultJSON.NO_SUCH_FILE))
+                } finally {
+                    try {
+                        out?.flush()
+                        out?.close()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+                taking = false
+                file.delete()
+                mCamera?.stopPreview()
+            } ?: let {
+                result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
+                taking = false
             }
-            taking = false
-            file.delete()
-        } ?: let {
+            mCamera?.startPreview()
+        } catch (e: Exception) {
             result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
         }
     }

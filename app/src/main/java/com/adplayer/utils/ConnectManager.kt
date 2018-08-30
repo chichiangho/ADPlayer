@@ -21,6 +21,7 @@ object ConnectManager : HttpServerRequestCallback {
     const val COMMAND_SHOW_MAP = "showMap"
     private const val COMMAND_GET_PICS = "getPics"
     private const val COMMAND_GET_VIDEOS = "getVideos"
+    private const val COMMAND_IS_ONLINE = "isOnline"
     private const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
     private const val COMMAND_DELETE = "delete"
@@ -48,7 +49,7 @@ object ConnectManager : HttpServerRequestCallback {
         server.listen(PORT_LISTEN_DEFAULT)
     }
 
-    fun stop(){
+    fun stop() {
         server.stop()
     }
 
@@ -64,6 +65,9 @@ object ConnectManager : HttpServerRequestCallback {
             }
         }
         when (uri) {
+            COMMAND_IS_ONLINE -> {
+                response.send(ResultJSON())
+            }
             COMMAND_PLAY -> {
                 callback?.invoke(COMMAND_PLAY, params) {
                     response.send(it)
@@ -111,11 +115,11 @@ object ConnectManager : HttpServerRequestCallback {
                             response.sendStream(bInputStream, bInputStream.available().toLong())
                         } catch (e: IOException) {
                             e.printStackTrace()
-//                            response.send(ResultJSON(3000, e.message
-//                                    ?: "image file download failed"))
+                            response.send(ResultJSON(3000, e.message
+                                    ?: "image file download failed"))
                         }
                     } else {
-//                        response.send(it)
+                        response.send(it)
                     }
                 }
             }
