@@ -17,7 +17,7 @@ object PlayManager {
     }
 
     fun getMapPath(): String {
-        return appCtx.getExternalFilesDir("map").absolutePath + "map.png"
+        return appCtx.getExternalFilesDir("map").absolutePath + "/map.png"
     }
 
     fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
