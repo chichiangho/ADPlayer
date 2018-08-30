@@ -235,7 +235,7 @@ class Logger {
             var fileOutputStream: FileOutputStream? = null
             val fileInputStream: FileInputStream? = null
             try {
-                val file = File(Environment.getExternalStorageDirectory(), fileName)
+                val file = File(appCtx.getExternalFilesDir("logs").absolutePath + "/" + fileName)
                 fileOutputStream = FileOutputStream(file, true)
                 fileOutputStream.write(text.toByteArray())
             } catch (e: Exception) {

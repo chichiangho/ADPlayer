@@ -30,7 +30,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".activity.MainActivity" />
+        <activity
+            android:name=".activity.MainActivity"
+            android:screenOrientation="landscape" />
 
         <receiver android:name=".receiver.AutoStartReceiver">
             <intent-filter>

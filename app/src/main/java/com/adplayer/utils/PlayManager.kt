@@ -1,6 +1,9 @@
 package com.adplayer.utils
 
+import android.widget.Toast
 import com.chichiangho.common.extentions.appCtx
+import com.chichiangho.common.extentions.toast
+import java.lang.Exception
 
 object PlayManager {
     const val TYPE_PIC = 10
@@ -16,37 +19,41 @@ object PlayManager {
     }
 
     fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
-        val picDir = getPicDir()
-        val list = appCtx.getExternalFilesDir("picture").list().map {
-            if (withHeader)
-                "$picDir/$it"
-            else
-                it
-        }.toTypedArray()
-        if (list.isEmpty()) {
-            appCtx.assets.list("pic").forEach {
-                CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
-            }
-
-            callback(appCtx.getExternalFilesDir("picture").list().map {
+        try {
+            val picDir = getPicDir()
+            val list = appCtx.getExternalFilesDir("picture").list()?.map {
                 if (withHeader)
                     "$picDir/$it"
                 else
                     it
-            }.toTypedArray())
-        } else {
-            callback(list)
+            }?.toTypedArray() ?: emptyArray()
+            if (list.isEmpty()) {
+                appCtx.assets.list("pic").forEach {
+                    CopyUtil.copyAsserts(appCtx, "pic/$it", PlayManager.getPicDir() + "/" + it)
+                }
+
+                callback(appCtx.getExternalFilesDir("picture").list().map {
+                    if (withHeader)
+                        "$picDir/$it"
+                    else
+                        it
+                }.toTypedArray())
+            } else {
+                callback(list)
+            }
+        }catch (e:Exception){
+            toast(e.toString(),Toast.LENGTH_LONG)
         }
     }
 
     fun getVideos(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
         val videoDir = getVideoDir()
-        val list = appCtx.getExternalFilesDir("video").list().map {
+        val list = appCtx.getExternalFilesDir("video").list()?.map {
             if (withHeader)
                 "$videoDir/$it"
             else
                 it
-        }.toTypedArray()
+        }?.toTypedArray() ?: emptyArray()
         if (list.isEmpty()) {
             appCtx.assets.list("video").forEach {
                 CopyUtil.copyAsserts(appCtx, "video/$it", PlayManager.getVideoDir() + "/" + it)

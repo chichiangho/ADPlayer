@@ -1,6 +1,5 @@
 package com.adplayer.activity
 
-import android.Manifest
 import android.app.Activity
 import android.graphics.*
 import android.hardware.Camera
@@ -12,14 +11,12 @@ import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.fragment.CirclePLayer
-import com.adplayer.receiver.OnLineReceiver
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.getTime
 import com.chichiangho.common.extentions.screenWidth
-import com.yanzhenjie.permission.AndPermission
 import java.io.*
 
 
@@ -68,9 +65,9 @@ class MainActivity : BaseActivity() {
             }
 
             override fun surfaceDestroyed(holder: SurfaceHolder?) {
-//                mCamera?.stopPreview()
-//                mCamera?.unlock()
-//                mCamera?.release()
+                mCamera?.stopPreview()
+                mCamera?.unlock()
+                mCamera?.release()
             }
 
             override fun surfaceCreated(holder: SurfaceHolder?) {
@@ -95,23 +92,23 @@ class MainActivity : BaseActivity() {
                 taking = false
             }
         })
-
-        AndPermission.with(this)
-                .runtime()
-                .permission(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA)
-                .onGranted {
-                    initDatas()
-                }
-                .onDenied { finish() }
-                .start()
-
+// 这些代码在广告机上会崩溃
+//        AndPermission.with(this)
+//                .runtime()
+//                .permission(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA)
+//                .onGranted {
+        initDatas()
+//                }
+//                .onDenied { finish() }
+//                .start()
+//
         ConnectManager.init()
-        OnLineReceiver.addOnLineListener(object : OnLineReceiver.ChangeListener {
-            override fun onLine() {
-                ConnectManager.stop()
-                ConnectManager.init()
-            }
-        })
+//        OnLineReceiver.addOnLineListener(object : OnLineReceiver.ChangeListener {
+//            override fun onLine() {
+//                ConnectManager.stop()
+//                ConnectManager.init()
+//            }
+//        })
         ConnectManager.registerCommandListener { command, params, result ->
             runOnUiThread {
                 when (command) {
