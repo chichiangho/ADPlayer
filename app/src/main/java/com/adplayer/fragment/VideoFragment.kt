@@ -12,9 +12,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.VideoView
 import com.adplayer.R
-import com.chichiangho.common.extentions.io_main
-import io.reactivex.Observable
-import java.util.concurrent.TimeUnit
+import com.chichiangho.common.extentions.delayThenRunOnUiThread
 
 
 class VideoFragment : Fragment() {
@@ -54,11 +52,9 @@ class VideoFragment : Fragment() {
     fun stop() {
         if (video.isPlaying)
             video.pause()
-        Observable.timer(300, TimeUnit.MILLISECONDS)
-                .io_main()
-                .subscribe {
-                    if (video.isPlaying)
-                        video.pause()
-                }
+        delayThenRunOnUiThread(300) {
+            if (video.isPlaying)
+                video.pause()
+        }
     }
 }

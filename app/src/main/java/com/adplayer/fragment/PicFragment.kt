@@ -9,10 +9,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.adplayer.R
 import com.bumptech.glide.Glide
-import com.chichiangho.common.extentions.io_main
-import io.reactivex.Observable
+import com.chichiangho.common.extentions.delayThenRunOnUiThread
 import io.reactivex.disposables.Disposable
-import java.util.concurrent.TimeUnit
 
 class PicFragment : Fragment() {
     private lateinit var pic: ImageView
@@ -32,11 +30,9 @@ class PicFragment : Fragment() {
         tV.text = text
         if (disposeAble?.isDisposed == false)
             disposeAble?.dispose()
-        disposeAble = Observable.timer(delayTime, TimeUnit.MILLISECONDS)
-                .io_main()
-                .subscribe {
-                    callback.invoke()
-                }
+        disposeAble = delayThenRunOnUiThread(delayTime) {
+            callback.invoke()
+        }
     }
 
     fun setDelayTime(delayTime: Long): PicFragment {

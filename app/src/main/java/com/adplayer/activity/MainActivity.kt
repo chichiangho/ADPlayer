@@ -1,12 +1,14 @@
 package com.adplayer.activity
 
 import android.app.Activity
+import android.content.Context
 import android.graphics.*
 import android.hardware.Camera
 import android.os.Bundle
 import android.os.Handler
 import android.view.*
 import android.widget.ImageView
+import android.widget.Toast
 import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
@@ -18,7 +20,11 @@ import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.appCtx
 import com.chichiangho.common.extentions.getTime
 import com.chichiangho.common.extentions.screenWidth
+import com.chichiangho.common.extentions.toast
 import java.io.*
+import java.net.Inet4Address
+import java.net.NetworkInterface
+import java.net.SocketException
 
 
 class MainActivity : BaseActivity() {
@@ -28,12 +34,37 @@ class MainActivity : BaseActivity() {
     private lateinit var mapView: ImageView
     private var mCamera: Camera? = null
 
+    fun getIP(context: Context): String? {
+
+        try {
+            val en = NetworkInterface.getNetworkInterfaces()
+            while (en.hasMoreElements()) {
+                val intf = en.nextElement()
+                val enumIpAddr = intf.inetAddresses
+                while (enumIpAddr.hasMoreElements()) {
+                    val inetAddress = enumIpAddr.nextElement()
+                    if (!inetAddress.isLoopbackAddress && inetAddress is Inet4Address) {
+                        return inetAddress.getHostAddress().toString()
+                    }
+                }
+            }
+        } catch (ex: SocketException) {
+            ex.printStackTrace()
+        }
+
+        return null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN)
         setContentView(R.layout.activity_main)
 
         if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
             finish()
+
+        toast("IP: " + getIP(this) + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
 
         mapView = findViewById(R.id.mapView)
         circlePLayer = findViewById(R.id.circle_player)
@@ -79,12 +110,12 @@ class MainActivity : BaseActivity() {
                     val numberOfCameras = Camera.getNumberOfCameras()
                     for (i in 0 until numberOfCameras) {
                         Camera.getCameraInfo(i, cameraInfo)
-                        if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {//前置摄像头
+                        if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT || numberOfCameras == 1) {//前置摄像头或唯一摄像头
                             mCamera = Camera.open(i)
                             mCamera?.let {
                                 it.setPreviewDisplay(holder)
                                 setCameraDisplayOrientation(this@MainActivity, i, it)
-                                it.setDisplayOrientation(90)
+                                it.setDisplayOrientation(0)
                                 it.startPreview()
                             }
                         }
@@ -197,7 +228,7 @@ class MainActivity : BaseActivity() {
                 val source1 = BitmapFactory.decodeByteArray(temp, 0, temp.size)
 
                 val matrix = Matrix()
-                matrix.postRotate(-90F)
+                matrix.postRotate(180F)
                 val source = Bitmap.createBitmap(source1, 0, 0, source1.width, source1.height, matrix, true)
 
                 val file = File(path)

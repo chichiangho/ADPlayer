@@ -24,11 +24,12 @@ object ConnectManager : HttpServerRequestCallback {
     private const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
     private const val COMMAND_DELETE = "delete"
+    private const val COMMAND_SET_LIGHT = "setLight"
     private const val COMMAND_SET_AUTO_TURN_ON_OFF = "setAutoTurnOnTurnOff"
 
     const val REFRESH = "refresh"
 
-    private const val PORT_LISTEN_DEFAULT = 8000
+    const val PORT_LISTEN_DEFAULT = 1234
 
     private var server = AsyncHttpServer()
 
@@ -64,8 +65,8 @@ object ConnectManager : HttpServerRequestCallback {
             }
         }
         when (uri) {
-            COMMAND_IS_ONLINE -> {
-                response.send(ResultJSON())
+            COMMAND_SET_LIGHT -> {
+//                JNIInterface.setLight(params.getInt("light"))
             }
             COMMAND_PLAY -> {
                 callback?.invoke(COMMAND_PLAY, params) {
@@ -139,6 +140,9 @@ object ConnectManager : HttpServerRequestCallback {
                         if (savePath.isBlank()) {
                             response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT))
                             return@MultipartCallback
+                        }
+                        if (savePath == PlayManager.getMapPath()) {//地图删除旧的
+                            File(PlayManager.getMapPath()).delete()
                         }
                     }
 

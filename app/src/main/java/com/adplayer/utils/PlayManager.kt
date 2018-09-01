@@ -70,7 +70,7 @@ object PlayManager {
 
     fun getType(name1: String): Int {
         val name = name1.toLowerCase()
-        return if (name == "map.png" || name == "map.jpeg") {
+        return if (name.startsWith("admap")) {
             TYPE_MAP
         } else if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
             TYPE_PIC
