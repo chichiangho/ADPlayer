@@ -24,7 +24,8 @@ object ConnectManager : HttpServerRequestCallback {
     private const val COMMAND_UPLOAD = "upload"
     private const val COMMAND_REBOOT = "reboot"
     private const val COMMAND_DELETE = "delete"
-    private const val COMMAND_SET_LIGHT = "setLight"
+    const val COMMAND_SET_LIGHT = "setLight"
+    const val COMMAND_GET_LIGHT = "getLight"
     private const val COMMAND_SET_AUTO_TURN_ON_OFF = "setAutoTurnOnTurnOff"
 
     const val REFRESH = "refresh"
@@ -65,8 +66,15 @@ object ConnectManager : HttpServerRequestCallback {
             }
         }
         when (uri) {
+            COMMAND_GET_LIGHT -> {
+                callback?.invoke(COMMAND_GET_LIGHT, params) {
+                    response.send(it)
+                }
+            }
             COMMAND_SET_LIGHT -> {
-//                JNIInterface.setLight(params.getInt("light"))
+                callback?.invoke(COMMAND_GET_LIGHT, params) {
+                    response.send(it)
+                }
             }
             COMMAND_PLAY -> {
                 callback?.invoke(COMMAND_PLAY, params) {

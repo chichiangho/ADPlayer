@@ -1,7 +1,7 @@
 package com.adplayer.activity
 
 import android.app.Activity
-import android.content.Context
+import android.app.AdtManager
 import android.graphics.*
 import android.hardware.Camera
 import android.os.Bundle
@@ -34,7 +34,7 @@ class MainActivity : BaseActivity() {
     private lateinit var mapView: ImageView
     private var mCamera: Camera? = null
 
-    fun getIP(context: Context): String? {
+    private fun getIP(): String? {
 
         try {
             val en = NetworkInterface.getNetworkInterfaces()
@@ -55,6 +55,8 @@ class MainActivity : BaseActivity() {
         return null
     }
 
+    private var mRemote: AdtManager? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -64,7 +66,7 @@ class MainActivity : BaseActivity() {
         if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
             finish()
 
-        toast("IP: " + getIP(this) + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
+        toast("IP: " + getIP() + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
 
         mapView = findViewById(R.id.mapView)
         circlePLayer = findViewById(R.id.circle_player)
@@ -158,12 +160,32 @@ class MainActivity : BaseActivity() {
                     ConnectManager.REFRESH -> {
                         initDatas()
                     }
+                    ConnectManager.COMMAND_GET_LIGHT -> {
+                        mRemote?.let {
+                            ResultJSON().put("light", it.`val`)
+                        } ?: let {
+                            ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
+                        }
+                    }
+                    ConnectManager.COMMAND_SET_LIGHT -> {
+                        try {
+                            mRemote?.let {
+                                it.`val` = params.getInt("light")
+                                ResultJSON(1000, "设置成功")
+                            } ?: let {
+                                ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
+                            }
+                        } catch (e: Exception) {
+                            ResultJSON(ResultJSON.PARAMS_ERROR, e.message ?: "")
+                        }
+                    }
                     else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
                 }
             }
         }
-    }
 
+        mRemote = getSystemService("Adt") as? AdtManager
+    }
     override fun onDestroy() {
         ConnectManager.stop()
         super.onDestroy()

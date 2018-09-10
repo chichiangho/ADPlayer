@@ -6,11 +6,12 @@ import com.chichiangho.common.extentions.appCtx
 import java.io.DataOutputStream
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files.exists
 
 
 object TurnOnOffManager {
     fun setOnOff(turnOn: String?, turnOff: String?): ResultJSON {
+
+
 
         return ResultJSON()
     }

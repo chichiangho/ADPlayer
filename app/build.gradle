@@ -21,6 +21,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+//    sourceSets {
+//        main {
+//            jniLibs.srcDirs = ['libs']
+//        }
+//    }
 }
 
 dependencies {
@@ -37,6 +42,7 @@ dependencies {
     implementation project(':common')
     implementation project(':library_rx_okhttp')
     implementation 'com.koushikdutta.async:androidasync:2.2.1'
+    compileOnly files('libs/adt.jar')
 }
 repositories {
     mavenCentral()
