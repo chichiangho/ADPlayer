@@ -17,14 +17,13 @@ import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
 import com.bumptech.glide.Glide
 import com.chichiangho.common.base.BaseActivity
-import com.chichiangho.common.extentions.appCtx
-import com.chichiangho.common.extentions.getTime
-import com.chichiangho.common.extentions.screenWidth
-import com.chichiangho.common.extentions.toast
+import com.chichiangho.common.extentions.*
 import java.io.*
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.SocketException
+import java.util.*
+import kotlin.concurrent.timerTask
 
 
 class MainActivity : BaseActivity() {
@@ -167,6 +166,9 @@ class MainActivity : BaseActivity() {
                             ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
                         }
                     }
+                    ConnectManager.COMMAND_REBOOT -> {
+                        mRemote?.Reboot()
+                    }
                     ConnectManager.COMMAND_SET_LIGHT -> {
                         try {
                             mRemote?.let {
@@ -185,7 +187,24 @@ class MainActivity : BaseActivity() {
         }
 
         mRemote = getSystemService("Adt") as? AdtManager
+
+        Timer().schedule(object : TimerTask() {
+            override fun run() {
+                val turnOff = getPrivateSharedPreferences().getString("turnOff", "")
+                if (turnOff != "") {
+                    try {
+                        val turnOffToday = System.currentTimeMillis().formatDate("yyyy-MM-dd") + " " + turnOff
+                        val turnOffTime = turnOffToday.getTime("yyyy-MM-dd HH:mm")
+                        if (System.currentTimeMillis() - turnOffTime > 0) {
+                            mRemote?.shutDown()
+                        }
+                    } catch (e: Exception) {
+                    }
+                }
+            }
+        }, 10000, 10000)
     }
+
     override fun onDestroy() {
         ConnectManager.stop()
         super.onDestroy()

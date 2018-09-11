@@ -22,7 +22,7 @@ object ConnectManager : HttpServerRequestCallback {
     private const val COMMAND_GET_VIDEOS = "getVideos"
     private const val COMMAND_IS_ONLINE = "isOnline"
     private const val COMMAND_UPLOAD = "upload"
-    private const val COMMAND_REBOOT = "reboot"
+    const val COMMAND_REBOOT = "reboot"
     private const val COMMAND_DELETE = "delete"
     const val COMMAND_SET_LIGHT = "setLight"
     const val COMMAND_GET_LIGHT = "getLight"
@@ -66,6 +66,9 @@ object ConnectManager : HttpServerRequestCallback {
             }
         }
         when (uri) {
+            COMMAND_IS_ONLINE -> {
+                response.send(ResultJSON())
+            }
             COMMAND_GET_LIGHT -> {
                 callback?.invoke(COMMAND_GET_LIGHT, params) {
                     response.send(it)
@@ -106,7 +109,9 @@ object ConnectManager : HttpServerRequestCallback {
                 }
             }
             COMMAND_REBOOT -> {
-                response.send(TurnOnOffManager.reboot())
+                callback?.invoke(COMMAND_REBOOT, params) {
+                    response.send(it)
+                }
             }
             COMMAND_SET_AUTO_TURN_ON_OFF -> {
                 val turnOn = params.optString("turnOn")

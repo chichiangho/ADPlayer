@@ -71,14 +71,14 @@ fun logToFile(time: String, msg: Any?, fileName: String) {
 
 class Logger {
     companion object {
-        val DEFAULT_TAG = "Logger"
-        val JSON_SPLIT = "( ゜- ゜)つロ"
-        private val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
-        val TOP_BORDER = '┌' + SINGLE_DIVIDER + SINGLE_DIVIDER
-        val BOTTOM_BORDER = '└' + SINGLE_DIVIDER + SINGLE_DIVIDER
-        val MIDDLE_BORDER = '├' + SINGLE_DIVIDER + SINGLE_DIVIDER
-        val JSON_INDENT = 2
-        val MAX_STACK_LINE_COUNT = 5// 打印调用栈的行數,MAX_STACK_LINE_COUNT行
+        const val DEFAULT_TAG = "Logger"
+        const val JSON_SPLIT = "( ゜- ゜)つロ"
+        private const val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+        const val TOP_BORDER = "┌$SINGLE_DIVIDER$SINGLE_DIVIDER"
+        const val BOTTOM_BORDER = "└$SINGLE_DIVIDER$SINGLE_DIVIDER"
+        const val MIDDLE_BORDER = "├$SINGLE_DIVIDER$SINGLE_DIVIDER"
+        const val JSON_INDENT = 2
+        const val MAX_STACK_LINE_COUNT = 5// 打印调用栈的行數,MAX_STACK_LINE_COUNT行
     }
 
     internal fun e(TAG: String, msg: String) {
