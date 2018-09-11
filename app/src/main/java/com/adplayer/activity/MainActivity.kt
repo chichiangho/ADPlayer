@@ -23,7 +23,6 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.SocketException
 import java.util.*
-import kotlin.concurrent.timerTask
 
 
 class MainActivity : BaseActivity() {
