@@ -75,7 +75,7 @@ class CirclePLayer : FrameLayout {
 
     fun play(path: String, text: String = ""): ResultJSON {
         if (!File(path).exists())
-            return ResultJSON(ResultJSON.NO_SUCH_FILE, "no such file")
+            return ResultJSON(ResultJSON.NO_SUCH_FILE)
         val last = cur
         if (last is PicFragment) {
             last.dispose()
@@ -105,7 +105,7 @@ class CirclePLayer : FrameLayout {
                 return ResultJSON()
             }
             else -> {
-                return ResultJSON(ResultJSON.TYPE_NOT_SUPPORT, "type not support")
+                return ResultJSON(ResultJSON.TYPE_NOT_SUPPORT)
             }
         }
     }

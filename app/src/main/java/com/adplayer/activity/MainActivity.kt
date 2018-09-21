@@ -61,8 +61,8 @@ class MainActivity : BaseActivity() {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN)
         setContentView(R.layout.activity_main)
 
-        if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
-            finish()
+//        if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
+//            finish()
 
         toast("IP: " + getIP() + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
 
@@ -172,7 +172,7 @@ class MainActivity : BaseActivity() {
                         try {
                             mRemote?.let {
                                 it.`val` = params.getInt("light")
-                                ResultJSON(1000, "设置成功")
+                                ResultJSON()
                             } ?: let {
                                 ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
                             }
