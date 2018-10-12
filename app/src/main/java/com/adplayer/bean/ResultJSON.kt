@@ -22,6 +22,11 @@ class ResultJSON(code: Int = 1000, msg: String = "") : JSONObject() {
         }
     }
 
+    fun add(key: String, value: Any): ResultJSON {
+        put(key, value)
+        return this
+    }
+
     companion object {
         const val NO_SUCH_FILE = 2001
         const val PARAMS_ERROR = 2002
@@ -29,6 +34,7 @@ class ResultJSON(code: Int = 1000, msg: String = "") : JSONObject() {
         const val REBOOT_FAILED = 2004
         const val TYPE_NOT_SUPPORT = 2005
         const val UPLOAD_FAILED = 2006
+        const val ADT_ERROR = 2007
         const val TAKE_PIC = 1283//专为拍照后传递照片地址使用
         const val CAMERA_NOT_READY = 1284
     }

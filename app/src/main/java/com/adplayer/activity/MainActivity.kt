@@ -30,6 +30,7 @@ class MainActivity : BaseActivity() {
 
     private lateinit var circlePLayer: CirclePLayer
     private lateinit var mapView: ImageView
+    private var timer: Timer? = null
     private var mCamera: Camera? = null
 
     private fun getIP(): String? {
@@ -61,10 +62,7 @@ class MainActivity : BaseActivity() {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN)
         setContentView(R.layout.activity_main)
 
-//        if (System.currentTimeMillis() > "2018-10-01 00:00:00".getTime())
-//            finish()
-
-        toast("IP: " + getIP() + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
+        dToast("IP: " + getIP() + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
 
         mapView = findViewById(R.id.mapView)
         circlePLayer = findViewById(R.id.circle_player)
@@ -159,25 +157,38 @@ class MainActivity : BaseActivity() {
                         initDatas()
                     }
                     ConnectManager.COMMAND_GET_LIGHT -> {
-                        mRemote?.let {
-                            ResultJSON().put("light", it.`val`)
-                        } ?: let {
-                            ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
+                        try {
+                            mRemote?.let {
+                                result(ResultJSON().add("light", it.`val`))
+                            } ?: let {
+                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
+                            }
+                        } catch (e: Exception) {
+                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
                         }
                     }
                     ConnectManager.COMMAND_REBOOT -> {
-                        mRemote?.Reboot()
+                        try {
+                            mRemote?.let {
+                                it.Reboot()
+                                result(ResultJSON())
+                            } ?: let {
+                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
+                            }
+                        } catch (e: Exception) {
+                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
+                        }
                     }
                     ConnectManager.COMMAND_SET_LIGHT -> {
                         try {
                             mRemote?.let {
                                 it.`val` = params.getInt("light")
-                                ResultJSON()
+                                result(ResultJSON())
                             } ?: let {
-                                ResultJSON(ResultJSON.PARAMS_ERROR, "服务未绑定")
+                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
                             }
                         } catch (e: Exception) {
-                            ResultJSON(ResultJSON.PARAMS_ERROR, e.message ?: "")
+                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
                         }
                     }
                     else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
@@ -187,17 +198,20 @@ class MainActivity : BaseActivity() {
 
         mRemote = getSystemService("Adt") as? AdtManager
 
-        Timer().schedule(object : TimerTask() {
+        timer = Timer()
+        timer?.schedule(object : TimerTask() {
             override fun run() {
                 val turnOff = getPrivateSharedPreferences().getString("turnOff", "")
                 if (turnOff != "") {
                     try {
                         val turnOffToday = System.currentTimeMillis().formatDate("yyyy-MM-dd") + " " + turnOff
-                        val turnOffTime = turnOffToday.getTime("yyyy-MM-dd HH:mm")
-                        if (System.currentTimeMillis() - turnOffTime > 0) {
+                        val overTime = System.currentTimeMillis() - turnOffToday.getTime("yyyy-MM-dd HH:mm")
+                        dToast(turnOffToday)
+                        if (overTime in 1..30000) {//半分钟内
                             mRemote?.shutDown()
                         }
                     } catch (e: Exception) {
+                        dToast(e.message ?: "Adt error")
                     }
                 }
             }
@@ -206,6 +220,7 @@ class MainActivity : BaseActivity() {
 
     override fun onDestroy() {
         ConnectManager.stop()
+        timer?.cancel()
         super.onDestroy()
     }
 

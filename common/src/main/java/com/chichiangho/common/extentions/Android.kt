@@ -11,6 +11,7 @@ import android.support.annotation.DimenRes
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.widget.Toast
+import com.changhong.common.BuildConfig
 import com.chichiangho.common.base.BaseApplication
 import com.chichiangho.common.base.LoadingDialog
 import java.util.ArrayList
@@ -36,6 +37,11 @@ fun getTopActivity(): Activity? = BaseApplication.instance.getTopActivity()
 fun getPrivateSharedPreferences(name: String? = null): SharedPreferences =
         name?.let { appCtx.getSharedPreferences(name, Context.MODE_PRIVATE) }
                 ?: PreferenceManager.getDefaultSharedPreferences(appCtx)
+
+fun dToast(string: String?, type: Int = Toast.LENGTH_SHORT) {
+    if (BuildConfig.DEBUG)
+        toast(string, type)
+}
 
 fun toast(string: String?, type: Int = Toast.LENGTH_SHORT) {
     if (string == null) return
