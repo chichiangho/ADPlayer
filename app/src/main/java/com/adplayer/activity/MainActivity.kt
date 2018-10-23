@@ -15,9 +15,11 @@ import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.fragment.CirclePLayer
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
+import com.adplayer.utils.TurnOnOffManager
 import com.bumptech.glide.Glide
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.*
+import org.json.JSONObject
 import java.io.*
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -30,6 +32,7 @@ class MainActivity : BaseActivity() {
 
     private lateinit var circlePLayer: CirclePLayer
     private lateinit var mapView: ImageView
+    private lateinit var barCodeView: ImageView
     private var timer: Timer? = null
     private var mCamera: Camera? = null
 
@@ -65,6 +68,7 @@ class MainActivity : BaseActivity() {
         dToast("IP: " + getIP() + ":" + ConnectManager.PORT_LISTEN_DEFAULT, Toast.LENGTH_LONG)
 
         mapView = findViewById(R.id.mapView)
+        barCodeView = findViewById(R.id.barCodeView)
         circlePLayer = findViewById(R.id.circle_player)
         circlePLayer.setDelay(5000).init(fragmentManager)
 
@@ -141,67 +145,72 @@ class MainActivity : BaseActivity() {
 //                ConnectManager.init()
 //            }
 //        })
-        ConnectManager.registerCommandListener { command, params, result ->
-            runOnUiThread {
-                when (command) {
-                    ConnectManager.COMMAND_PLAY -> {
-                        if (params.has("path"))
-                            result(play(params.optString("path"), params.optString("text")))
-                        else
-                            result(ResultJSON(PARAMS_ERROR))
-                    }
-                    ConnectManager.COMMAND_TACK_PICTURE -> {
-                        takePic(result)
-                    }
-                    ConnectManager.REFRESH -> {
-                        initDatas()
-                    }
-                    ConnectManager.COMMAND_GET_LIGHT -> {
-                        try {
-                            mRemote?.let {
-                                result(ResultJSON().add("light", it.`val`))
-                            } ?: let {
-                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
-                            }
-                        } catch (e: Exception) {
-                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
+        ConnectManager.registerCommandListener(object : ConnectManager.ConnectCallBack {
+            override fun invoke(command: String, params: JSONObject, callback: ConnectManager.ConnectResult) {
+                runOnUiThread {
+                    when (command) {
+                        ConnectManager.COMMAND_PLAY -> {
+                            if (params.has("path"))
+                                callback.invoke(play(params.optString("path"), params.optString("text")))
+                            else
+                                callback.invoke(ResultJSON(PARAMS_ERROR))
                         }
-                    }
-                    ConnectManager.COMMAND_REBOOT -> {
-                        try {
-                            mRemote?.let {
-                                it.Reboot()
-                                result(ResultJSON())
-                            } ?: let {
-                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
-                            }
-                        } catch (e: Exception) {
-                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
+                        ConnectManager.COMMAND_TACK_PICTURE -> {
+                            takePic(callback)
                         }
-                    }
-                    ConnectManager.COMMAND_SET_LIGHT -> {
-                        try {
-                            mRemote?.let {
-                                it.`val` = params.getInt("light")
-                                result(ResultJSON())
-                            } ?: let {
-                                result(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
-                            }
-                        } catch (e: Exception) {
-                            result(ResultJSON(ResultJSON.ADT_ERROR, e.message ?: "Adt error"))
+                        ConnectManager.REFRESH -> {
+                            initDatas()
                         }
+                        ConnectManager.COMMAND_GET_LIGHT -> {
+                            try {
+                                mRemote?.let {
+                                    callback.invoke(ResultJSON().add("light", it.`val`))
+                                } ?: let {
+                                    callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
+                                }
+                            } catch (e: Exception) {
+                                callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, e.message
+                                        ?: "Adt error"))
+                            }
+                        }
+                        ConnectManager.COMMAND_REBOOT -> {
+                            try {
+                                mRemote?.let {
+                                    it.Reboot()
+                                    callback.invoke(ResultJSON())
+                                } ?: let {
+                                    callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
+                                }
+                            } catch (e: Exception) {
+                                callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, e.message
+                                        ?: "Adt error"))
+                            }
+                        }
+                        ConnectManager.COMMAND_SET_LIGHT -> {
+                            try {
+                                mRemote?.let {
+                                    it.`val` = params.getInt("light")
+                                    callback.invoke(ResultJSON())
+                                } ?: let {
+                                    callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, "Adt服务未绑定"))
+                                }
+                            } catch (e: Exception) {
+                                callback.invoke(ResultJSON(ResultJSON.ADT_ERROR, e.message
+                                        ?: "Adt error"))
+                            }
+                        }
+                        else -> callback.invoke(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
                     }
-                    else -> result(ResultJSON(ResultJSON.NO_SUCH_COMMAND))
                 }
             }
-        }
+        })
 
         mRemote = getSystemService("Adt") as? AdtManager
 
         timer = Timer()
         timer?.schedule(object : TimerTask() {
             override fun run() {
-                val turnOff = getPrivateSharedPreferences().getString("turnOff", "")
+                val turnOff = TurnOnOffManager.getTurnOff()
                 if (turnOff != "") {
                     try {
                         val turnOffToday = System.currentTimeMillis().formatDate("yyyy-MM-dd") + " " + turnOff
@@ -255,13 +264,17 @@ class MainActivity : BaseActivity() {
                 sourceList.addAll(it)
                 circlePLayer.setData(sourceList).start()
             }
+
+            if (File(PlayManager.getBarCodePath()).exists()) {
+                Glide.with(this).load(PlayManager.getBarCodePath()).into(barCodeView)
+            }
         }
     }
 
     private var taking = false
-    private fun takePic(result: (result: ResultJSON) -> Unit) {
+    private fun takePic(result: ConnectManager.ConnectResult) {
         if (taking) {
-            result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
+            result.invoke(ResultJSON(ResultJSON.CAMERA_NOT_READY))
             return
         }
         taking = true
@@ -293,10 +306,10 @@ class MainActivity : BaseActivity() {
                 try {
                     out = FileOutputStream(file)
                     source.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                    result(ResultJSON(ResultJSON.TAKE_PIC, path))
+                    result.invoke(ResultJSON(ResultJSON.TAKE_PIC, path))
                 } catch (e: FileNotFoundException) {
                     e.printStackTrace()
-                    result(ResultJSON(ResultJSON.NO_SUCH_FILE))
+                    result.invoke(ResultJSON(ResultJSON.NO_SUCH_FILE))
                 } finally {
                     try {
                         out?.flush()
@@ -309,12 +322,12 @@ class MainActivity : BaseActivity() {
                 file.delete()
                 mCamera?.stopPreview()
             } ?: let {
-                result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
+                result.invoke(ResultJSON(ResultJSON.CAMERA_NOT_READY))
                 taking = false
             }
             mCamera?.startPreview()
         } catch (e: Exception) {
-            result(ResultJSON(ResultJSON.CAMERA_NOT_READY))
+            result.invoke(ResultJSON(ResultJSON.CAMERA_NOT_READY))
         }
     }
 

@@ -34,9 +34,9 @@ object ConnectManager : HttpServerRequestCallback {
 
     private var server = AsyncHttpServer()
 
-    private var callback: ((command: String, params: JSONObject, (result: ResultJSON) -> Unit) -> Unit)? = null
+    private var callback: ConnectCallBack? = null
 
-    fun registerCommandListener(callback: (command: String, params: JSONObject, (result: ResultJSON) -> Unit) -> Unit) {
+    fun registerCommandListener(callback: ConnectCallBack) {
         this.callback = callback
     }
 
@@ -70,19 +70,25 @@ object ConnectManager : HttpServerRequestCallback {
                 response.send(ResultJSON())
             }
             COMMAND_GET_LIGHT -> {
-                callback?.invoke(COMMAND_GET_LIGHT, params) {
-                    response.send(it)
-                }
+                callback?.invoke(COMMAND_GET_LIGHT, params, object : ConnectResult {
+                    override fun invoke(resultJSON: ResultJSON) {
+                        response.send(resultJSON)
+                    }
+                })
             }
             COMMAND_SET_LIGHT -> {
-                callback?.invoke(COMMAND_GET_LIGHT, params) {
-                    response.send(it)
-                }
+                callback?.invoke(COMMAND_GET_LIGHT, params, object : ConnectResult {
+                    override fun invoke(resultJSON: ResultJSON) {
+                        response.send(resultJSON)
+                    }
+                })
             }
             COMMAND_PLAY -> {
-                callback?.invoke(COMMAND_PLAY, params) {
-                    response.send(it)
-                }
+                callback?.invoke(COMMAND_PLAY, params, object : ConnectResult {
+                    override fun invoke(resultJSON: ResultJSON) {
+                        response.send(resultJSON)
+                    }
+                })
             }
             COMMAND_GET_PICS -> {
                 PlayManager.getPics(false) {
@@ -101,7 +107,10 @@ object ConnectManager : HttpServerRequestCallback {
                         response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT))
                     } else {
                         File(path).delete()
-                        callback?.invoke(REFRESH, params) {}
+                        callback?.invoke(REFRESH, params, object : ConnectResult {
+                            override fun invoke(resultJSON: ResultJSON) {
+                            }
+                        })
                         response.send(ResultJSON())
                     }
                 } else {
@@ -109,9 +118,11 @@ object ConnectManager : HttpServerRequestCallback {
                 }
             }
             COMMAND_REBOOT -> {
-                callback?.invoke(COMMAND_REBOOT, params) {
-                    response.send(it)
-                }
+                callback?.invoke(COMMAND_REBOOT, params, object : ConnectResult {
+                    override fun invoke(resultJSON: ResultJSON) {
+                        response.send(resultJSON)
+                    }
+                })
             }
             COMMAND_SET_AUTO_TURN_ON_OFF -> {
                 val turnOn = params.optString("turnOn")
@@ -119,22 +130,24 @@ object ConnectManager : HttpServerRequestCallback {
                 response.send(TurnOnOffManager.setOnOff(turnOn, turnOff))
             }
             COMMAND_TACK_PICTURE -> {
-                callback?.invoke(COMMAND_TACK_PICTURE, params) {
-                    if (it.get("code") == ResultJSON.TAKE_PIC) {
-                        try {
-                            val fullPath = it.optString("msg")
-                            response.setContentType("application/x-png")
-                            val bInputStream = BufferedInputStream(File(fullPath).inputStream())
-                            response.sendStream(bInputStream, bInputStream.available().toLong())
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                            response.send(ResultJSON(3000, e.message
-                                    ?: "image file download failed"))
+                callback?.invoke(COMMAND_TACK_PICTURE, params, object : ConnectResult {
+                    override fun invoke(it: ResultJSON) {
+                        if (it.get("code") == ResultJSON.TAKE_PIC) {
+                            try {
+                                val fullPath = it.optString("msg")
+                                response.setContentType("application/x-png")
+                                val bInputStream = BufferedInputStream(File(fullPath).inputStream())
+                                response.sendStream(bInputStream, bInputStream.available().toLong())
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                                response.send(ResultJSON(3000, e.message
+                                        ?: "image file download failed"))
+                            }
+                        } else {
+                            response.send(it)
                         }
-                    } else {
-                        response.send(it)
                     }
-                }
+                })
             }
             COMMAND_UPLOAD -> {
                 if (request.body !is MultipartFormDataBody) {
@@ -156,6 +169,9 @@ object ConnectManager : HttpServerRequestCallback {
                         }
                         if (savePath == PlayManager.getMapPath()) {//地图删除旧的
                             File(PlayManager.getMapPath()).delete()
+                        }
+                        if (savePath == PlayManager.getBarCodePath()) {//二维码删除旧的
+                            File(PlayManager.getBarCodePath()).delete()
                         }
                     }
 
@@ -192,9 +208,11 @@ object ConnectManager : HttpServerRequestCallback {
                 request.endCallback = CompletedCallback {
                     if (File(savePath).exists()) {
                         response.send(ResultJSON())
-                        callback?.invoke(REFRESH, params) {
+                        callback?.invoke(REFRESH, params, object : ConnectResult {
+                            override fun invoke(resultJSON: ResultJSON) {
 
-                        }
+                            }
+                        })
                     } else
                         response.send(ResultJSON(ResultJSON.UPLOAD_FAILED))
                     fileUploadHolder.fileOutPutStream?.close()
@@ -210,5 +228,13 @@ object ConnectManager : HttpServerRequestCallback {
         var fileName: String? = null
         var recievedFile: File? = null
         var fileOutPutStream: BufferedOutputStream? = null
+    }
+
+    interface ConnectCallBack {
+        fun invoke(command: String, params: JSONObject, callback: ConnectManager.ConnectResult)
+    }
+
+    interface ConnectResult {
+        fun invoke(resultJSON: ResultJSON)
     }
 }

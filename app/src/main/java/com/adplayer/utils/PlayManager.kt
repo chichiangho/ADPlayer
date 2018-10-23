@@ -6,7 +6,8 @@ object PlayManager {
     const val TYPE_PIC = 10
     const val TYPE_VIDEO = 11
     const val TYPE_MAP = 12
-    const val TYPE_UNKNOW = 13
+    const val TYPE_BARCODE = 13
+    const val TYPE_UNKNOW = 14
 
     fun getVideoDir(): String {
         return appCtx.getExternalFilesDir("video").absolutePath
@@ -18,6 +19,10 @@ object PlayManager {
 
     fun getMapPath(): String {
         return appCtx.getExternalFilesDir("map").absolutePath + "/map.png"
+    }
+
+    fun getBarCodePath(): String {
+        return appCtx.getExternalFilesDir("barcode").absolutePath + "/barcode.png"
     }
 
     fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
@@ -72,6 +77,8 @@ object PlayManager {
         val name = name1.toLowerCase()
         return if (name.startsWith("admap")) {
             TYPE_MAP
+        } else if (name.startsWith("barcode")) {
+            TYPE_BARCODE
         } else if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
             TYPE_PIC
         } else if (name.endsWith(".mp4") || name.endsWith(".rm") || name.endsWith(".rmvb") || name.endsWith(".flv")
@@ -89,6 +96,7 @@ object PlayManager {
             TYPE_MAP -> getMapPath()
             TYPE_PIC -> getPicDir() + "/" + name
             TYPE_VIDEO -> getVideoDir() + "/" + name
+            TYPE_BARCODE -> getBarCodePath() + "/" + name
             else -> ""
         }
     }
