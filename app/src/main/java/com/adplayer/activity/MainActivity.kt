@@ -1,5 +1,6 @@
 package com.adplayer.activity
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AdtManager
 import android.graphics.*
@@ -59,6 +60,7 @@ class MainActivity : BaseActivity() {
 
     private var mRemote: AdtManager? = null
 
+    @SuppressLint("WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -236,7 +238,7 @@ class MainActivity : BaseActivity() {
     private var lastTouchTime = 0L
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == 259 && System.currentTimeMillis() - lastTouchTime > 1000) {//地图触摸按键
+        if (keyCode == 259 && System.currentTimeMillis() - lastTouchTime > 10000) {//地图触摸按键
             lastTouchTime = System.currentTimeMillis()
             showMap()
         }
@@ -266,6 +268,7 @@ class MainActivity : BaseActivity() {
             }
 
             if (File(PlayManager.getBarCodePath()).exists()) {
+                barCodeView.visibility = View.VISIBLE
                 Glide.with(this).load(PlayManager.getBarCodePath()).into(barCodeView)
             }
         }

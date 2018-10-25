@@ -96,7 +96,7 @@ object PlayManager {
             TYPE_MAP -> getMapPath()
             TYPE_PIC -> getPicDir() + "/" + name
             TYPE_VIDEO -> getVideoDir() + "/" + name
-            TYPE_BARCODE -> getBarCodePath() + "/" + name
+            TYPE_BARCODE -> getBarCodePath()
             else -> ""
         }
     }
