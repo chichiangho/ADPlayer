@@ -209,6 +209,7 @@ class MainActivity : BaseActivity() {
 
         mRemote = getSystemService("Adt") as? AdtManager
 
+        val stopAutoLightTime = "19:00:00".getTime("HH:mm:ss")
         timer = Timer()
         timer?.schedule(object : TimerTask() {
             override fun run() {
@@ -224,6 +225,17 @@ class MainActivity : BaseActivity() {
                     } catch (e: Exception) {
                         dToast(e.message ?: "Adt error")
                     }
+                }
+
+                val curTime = System.currentTimeMillis().formatDate("HH:mm:ss").getTime("HH:mm:ss")
+                if (curTime > stopAutoLightTime) {//最大亮度2/3
+                    mRemote?.`val` = 4095 / 3
+                } else {//自动亮度
+                    val light = mRemote?.`val` ?: 0
+                    val scaledLight = light * 4096 / 25000
+                    var reverse = 4095 - scaledLight
+                    reverse = if (reverse > 4095) 4095 else if (reverse < 0) 0 else reverse
+                    mRemote?.`val` = reverse
                 }
             }
         }, 10000, 10000)
