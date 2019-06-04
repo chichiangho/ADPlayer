@@ -3,6 +3,7 @@
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!--设置统一背景色，如果设为null，则每个activity最外层布局必须设置background，否则进入未设置background的activity后再进入设置了background的activity将看到显示异常-->
         <item name="android:windowBackground">@color/little_grey</item>
+        <item name="android:windowFullscreen">true</item>
         <!-- <item name="android:windowAnimationStyle">@style/activityAnimation</item>-->
     </style>
 

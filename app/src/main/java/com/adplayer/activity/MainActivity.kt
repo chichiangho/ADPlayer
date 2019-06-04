@@ -58,6 +58,13 @@ class MainActivity : BaseActivity() {
         return null
     }
 
+    var time = 0L
+    override fun onBackPressed() {
+        if (System.currentTimeMillis() - time < 2000)
+            super.onBackPressed()
+        time = System.currentTimeMillis()
+    }
+
     private var mRemote: AdtManager? = null
 
     @SuppressLint("WrongConstant")
@@ -72,7 +79,7 @@ class MainActivity : BaseActivity() {
         mapView = findViewById(R.id.mapView)
         barCodeView = findViewById(R.id.barCodeView)
         circlePLayer = findViewById(R.id.circle_player)
-        circlePLayer.setDelay(5000).init(fragmentManager)
+        circlePLayer.setDelay(5000).init(this, fragmentManager)
 
         val surfaceV = findViewById<SurfaceView>(R.id.surface_view)
         val surfaceHolder = surfaceV.holder

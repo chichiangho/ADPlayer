@@ -32,7 +32,8 @@
 
         <activity
             android:name=".activity.MainActivity"
-            android:screenOrientation="landscape" />
+            android:configChanges="touchscreen|navigation|keyboard|keyboardHidden|screenLayout|screenSize|density"
+            android:screenOrientation="sensorPortrait" />
 
         <receiver android:name=".receiver.AutoStartReceiver">
             <intent-filter>
