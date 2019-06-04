@@ -1,0 +1,40 @@
+<!--debug属性用来决定是否打印logback的日志信息-->
+<configuration debug='false'>
+
+	<!--声明一个属性,用来指定log文件存放的路径-->
+	<property name="LOG_DIR" value="/mnt/sdcard/Android/data/com.adplayer"/>
+
+	<!--声明一个时间戳-->
+	<timestamp datePattern="yyyyMMdd" key="today"/>
+
+	<!--用于在控制台输出的Appender-->
+	<appender name="LOGCAT" class="ch.qos.logback.classic.android.LogcatAppender">
+		<encoder>
+			<pattern>%-5relative [%thread][%file:%M:%line] - %msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!--声明一个RollingFileAppender-->
+	<appender name="BASE_ROLL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_DIR}/base.roll.${today}.log</file>
+		<append>true</append>
+		<encoder>
+			<pattern>%date %-5relative [%thread] %-5level %logger{36} [%file:%M:%line] - %msg%n
+			</pattern>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_DIR}/base.roll.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<!--最大保存7天的日志-->
+			<maxHistory>7</maxHistory>
+		</rollingPolicy>
+	</appender>
+
+
+	<!-- Write INFO (and higher-level) messages to the log file -->
+	<root level="INFO">
+		<appender-ref ref="LOGCAT"/>
+		<appender-ref ref="BASE_ROLL_FILE" />
+	</root>
+
+</configuration>

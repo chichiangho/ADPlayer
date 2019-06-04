@@ -1,9 +1,8 @@
 package com.adplayer.fragment
 
-import android.app.Fragment
-import android.app.FragmentManager
-import android.app.FragmentTransaction
 import android.content.Context
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentManager
 import android.support.v7.app.AppCompatActivity
 import android.util.AttributeSet
 import android.widget.FrameLayout
@@ -11,7 +10,6 @@ import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.utils.PlayManager
 import com.chichiangho.common.extentions.delayThenRunOnUiThread
-import com.chichiangho.common.extentions.toast
 import java.io.File
 
 class CirclePLayer : FrameLayout {
@@ -84,7 +82,7 @@ class CirclePLayer : FrameLayout {
             last.dispose()
         }
 
-        val trans = fragmentManager.beginTransaction().setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+        val trans = fragmentManager.beginTransaction()
         when (PlayManager.getType(path)) {
             PlayManager.TYPE_PIC -> {
                 if (cur == null) {
@@ -94,9 +92,8 @@ class CirclePLayer : FrameLayout {
                 } else {
                     cur = if (cur != pic1) pic1 else pic2
                     delayThenRunOnUiThread(delayTime / 2) {
-                        toast("图片切换")
                         if (!activity.isDestroyed)
-                            trans.show(cur).hide(last).setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).commit()
+                            trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commit()
                     }
                 }
                 (cur as PicFragment).setDelayTime(delayTime).playPic(path, text) {

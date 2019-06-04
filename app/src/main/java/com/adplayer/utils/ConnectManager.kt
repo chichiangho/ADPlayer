@@ -1,6 +1,8 @@
 package com.adplayer.utils
 
+import android.provider.MediaStore
 import com.adplayer.bean.ResultJSON
+import com.chichiangho.common.extentions.formatDate
 import com.chichiangho.common.extentions.toJson
 import com.koushikdutta.async.callback.CompletedCallback
 import com.koushikdutta.async.callback.DataCallback
@@ -13,6 +15,7 @@ import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
+import java.nio.file.Files
 
 
 object ConnectManager : HttpServerRequestCallback {
@@ -107,7 +110,7 @@ object ConnectManager : HttpServerRequestCallback {
                         response.send(ResultJSON(ResultJSON.TYPE_NOT_SUPPORT))
                     } else {
                         File(path).delete()
-                        callback?.invoke(REFRESH, params, object : ConnectResult {
+                        callback?.invoke(REFRESH, params,object :ConnectResult{
                             override fun invoke(resultJSON: ResultJSON) {
                             }
                         })
@@ -135,9 +138,24 @@ object ConnectManager : HttpServerRequestCallback {
                         if (it.get("code") == ResultJSON.TAKE_PIC) {
                             try {
                                 val fullPath = it.optString("msg")
-                                response.setContentType("application/x-png")
-                                val bInputStream = BufferedInputStream(File(fullPath).inputStream())
-                                response.sendStream(bInputStream, bInputStream.available().toLong())
+                                val date = System.currentTimeMillis().formatDate("yyyyMMdd")
+                                val newName =  params.getString("memberId") + "-" + File(fullPath).name
+                                val newPath =  fullPath.replace(File(fullPath).name, date + File.separator + newName)
+                                val newFile = File(newPath)
+                                if(!newFile.parentFile.exists()) {
+                                    newFile.parentFile.mkdirs()
+                                }
+                                val isRecaption = params.getBoolean("isRecaption");
+                                if(isRecaption) {
+                                    CopyUtil.moveFile(File(fullPath), newFile)
+                                    response.setContentType("application/x-png")
+                                    response.headers.add("Content-Disposition",newName)
+                                    val bInputStream =  (newFile.inputStream())
+                                    newFile.delete()
+                                    response.sendStream(bInputStream, bInputStream.available().toLong())
+                                } else {
+                                    response.send(ResultJSON(1000, newPath))
+                                }
                             } catch (e: IOException) {
                                 e.printStackTrace()
                                 response.send(ResultJSON(3000, e.message

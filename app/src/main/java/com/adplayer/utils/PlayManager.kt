@@ -25,6 +25,11 @@ object PlayManager {
         return appCtx.getExternalFilesDir("barcode").absolutePath + "/barcode.png"
     }
 
+    @JvmStatic
+    fun main(args: Array<String>) {
+        System.out.print(PlayManager.getBarCodePath())
+    }
+
     fun getPics(withHeader: Boolean = true, callback: (array: Array<String>) -> Unit) {
         val picDir = getPicDir()
         val list = appCtx.getExternalFilesDir("picture").list()?.map {
@@ -75,7 +80,7 @@ object PlayManager {
 
     fun getType(name1: String): Int {
         val name = name1.toLowerCase()
-        return if (name.startsWith("admap")) {
+        return if (name.startsWith("map")) {
             TYPE_MAP
         } else if (name.startsWith("barcode")) {
             TYPE_BARCODE

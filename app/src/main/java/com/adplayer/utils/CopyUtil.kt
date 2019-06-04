@@ -5,6 +5,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
 
 
 object CopyUtil {
@@ -39,6 +40,19 @@ object CopyUtil {
         while (`in`.read(buffer) != -1) {
             out.write(buffer)
         }
+    }
+
+    @Throws(IOException::class)
+    fun moveFile(source: File, target: File) {
+        val `in` = FileInputStream(source)
+        val out = FileOutputStream(target)
+
+        val buffer = ByteArray(2097152)
+
+        while (`in`.read(buffer) != -1) {
+            out.write(buffer)
+        }
+        source.delete();
     }
 
     @Throws(IOException::class)

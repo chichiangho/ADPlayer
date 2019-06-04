@@ -16,7 +16,6 @@ import com.adplayer.bean.ResultJSON.Companion.PARAMS_ERROR
 import com.adplayer.fragment.CirclePLayer
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
-import com.adplayer.utils.TurnOnOffManager
 import com.bumptech.glide.Glide
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.*
@@ -79,7 +78,7 @@ class MainActivity : BaseActivity() {
         mapView = findViewById(R.id.mapView)
         barCodeView = findViewById(R.id.barCodeView)
         circlePLayer = findViewById(R.id.circle_player)
-        circlePLayer.setDelay(5000).init(this, fragmentManager)
+        circlePLayer.setDelay(5000).init(this, supportFragmentManager)
 
         val surfaceV = findViewById<SurfaceView>(R.id.surface_view)
         val surfaceHolder = surfaceV.holder
@@ -216,36 +215,39 @@ class MainActivity : BaseActivity() {
 
         mRemote = getSystemService("Adt") as? AdtManager
 
-        val stopAutoLightTime = "19:00:00".getTime("HH:mm:ss")
         timer = Timer()
         timer?.schedule(object : TimerTask() {
             override fun run() {
-                val turnOff = TurnOnOffManager.getTurnOff()
-                if (turnOff != "") {
-                    try {
-                        val turnOffToday = System.currentTimeMillis().formatDate("yyyy-MM-dd") + " " + turnOff
-                        val overTime = System.currentTimeMillis() - turnOffToday.getTime("yyyy-MM-dd HH:mm")
-                        dToast(turnOffToday)
-                        if (overTime in 1..30000) {//半分钟内
-                            mRemote?.shutDown()
+                runOnUiThread {
+                    val turnOff = getPrivateSharedPreferences().getString("turnOff", "")
+                    if (turnOff != "") {
+                        try {
+                            val turnOffToday = System.currentTimeMillis().formatDate("yyyy-MM-dd") + " " + turnOff
+                            val overTime = System.currentTimeMillis() - turnOffToday.getTime("yyyy-MM-dd HH:mm")
+                            dToast(turnOffToday)
+                            if (overTime in 1..30000) {//半分钟内
+                                mRemote?.shutDown()
+                            }
+                        } catch (e: Exception) {
+                            dToast(e.message ?: "Adt error")
                         }
-                    } catch (e: Exception) {
-                        dToast(e.message ?: "Adt error")
                     }
-                }
 
-                val curTime = System.currentTimeMillis().formatDate("HH:mm:ss").getTime("HH:mm:ss")
-                if (curTime > stopAutoLightTime) {//最大亮度2/3
-                    mRemote?.`val` = 4095 / 3
-                } else {//自动亮度
-                    val light = mRemote?.`val` ?: 0
-                    val scaledLight = light * 4096 / 25000
-                    var reverse = 4095 - scaledLight
-                    reverse = if (reverse > 4095) 4095 else if (reverse < 0) 0 else reverse
-                    mRemote?.`val` = reverse
+                    val curDate = System.currentTimeMillis().formatDate("HH:mm:ss").getTime("HH:mm:ss")
+                    if (curDate > "19:00:00".getTime("HH:mm:ss")) {
+                        mRemote?.`val` = 4095 / 3
+                    } else {
+//                        val light = mRemote?.`val` ?: 0
+//                        val scaledLight = light * 4096 / 25000 * 3 / 2;
+//                        val reverse = 4095 - Math.abs(scaledLight)
+//                        val result = if (reverse < 0) 0 else (if (reverse > 4095) 4095 else reverse)
+                        val result = 1024
+                        mRemote?.`val` = result
+                    }
                 }
             }
         }, 10000, 10000)
+
     }
 
     override fun onDestroy() {
@@ -300,7 +302,8 @@ class MainActivity : BaseActivity() {
             return
         }
         taking = true
-        val path = appCtx.getExternalFilesDir("takePhoto").absolutePath + "/" + System.currentTimeMillis() + ".png"
+        val name = UUID.randomUUID().toString().replace("-", "");
+        val path = appCtx.getExternalFilesDir("takePhoto").absolutePath + "/" + name + ".png"
 
         try {
             mCamera?.setOneShotPreviewCallback { bytes: ByteArray, camera: Camera ->
@@ -341,7 +344,7 @@ class MainActivity : BaseActivity() {
                     }
                 }
                 taking = false
-                file.delete()
+//                file.delete()
                 mCamera?.stopPreview()
             } ?: let {
                 result.invoke(ResultJSON(ResultJSON.CAMERA_NOT_READY))
