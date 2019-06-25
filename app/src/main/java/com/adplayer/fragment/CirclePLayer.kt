@@ -35,7 +35,7 @@ class CirclePLayer : FrameLayout {
         this.fragmentManager = fragmentManager
         fragmentManager.beginTransaction()
                 .add(id, pic1).add(id, pic2).add(id, video)
-                .hide(pic1).hide(pic2).hide(video).commit()
+                .hide(pic1).hide(pic2).hide(video).commitAllowingStateLoss()
     }
 
     fun setData(data: ArrayList<String>): CirclePLayer {
@@ -88,12 +88,12 @@ class CirclePLayer : FrameLayout {
                 if (cur == null) {
                     cur = if (cur != pic1) pic1 else pic2
                     if (!activity.isDestroyed)
-                        trans.show(cur).hide(last).commit()
+                        trans.show(cur).hide(last).commitAllowingStateLoss()
                 } else {
                     cur = if (cur != pic1) pic1 else pic2
                     delayThenRunOnUiThread(delayTime / 2) {
                         if (!activity.isDestroyed)
-                            trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commit()
+                            trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commitAllowingStateLoss()
                     }
                 }
                 (cur as PicFragment).setDelayTime(delayTime).playPic(path, text) {
@@ -109,7 +109,7 @@ class CirclePLayer : FrameLayout {
                     cur = video
                     delayThenRunOnUiThread(500) {
                         if (!activity.isDestroyed)
-                            trans.show(cur).hide(last).commit()
+                            trans.show(cur).hide(last).commitAllowingStateLoss()
                     }
                 }
                 (cur as VideoFragment).playVideo(path, text) {

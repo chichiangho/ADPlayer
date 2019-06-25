@@ -15,8 +15,8 @@ class OnLineReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (ConnectivityManager.CONNECTIVITY_ACTION == intent.action) {//网络状态发送变化
-            val info = (context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).activeNetworkInfo
-            if (info.isConnected) {
+            val info = (context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager)?.activeNetworkInfo
+            if (info?.isConnected == true) {
                 listener.forEach {
                     it.get()?.onLine()
                 }
