@@ -9,10 +9,10 @@ import android.widget.FrameLayout
 import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.utils.PlayManager
-import com.chichiangho.common.extentions.delayThenRunOnUiThread
 import java.io.File
 
 class CirclePLayer : FrameLayout {
+    private var signature = System.currentTimeMillis()
     lateinit var fragmentManager: FragmentManager
     lateinit var activity: AppCompatActivity
     var sourceList = ArrayList<String>()
@@ -41,6 +41,11 @@ class CirclePLayer : FrameLayout {
     fun setData(data: ArrayList<String>): CirclePLayer {
         sourceList.clear()
         sourceList.addAll(data)
+        return this
+    }
+
+    fun setSignature(signature: Long): CirclePLayer {
+        this.signature = signature
         return this
     }
 
@@ -81,40 +86,31 @@ class CirclePLayer : FrameLayout {
         if (last is PicFragment) {
             last.dispose()
         }
+        if (last is VideoFragment) {
+            last.stop()
+        }
 
         val trans = fragmentManager.beginTransaction()
         when (PlayManager.getType(path)) {
             PlayManager.TYPE_PIC -> {
-                if (cur == null) {
-                    cur = if (cur != pic1) pic1 else pic2
+                cur = if (cur != pic1) pic1 else pic2
+                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text,signature, onReady = {
                     if (!activity.isDestroyed)
-                        trans.show(cur).hide(last).commitAllowingStateLoss()
-                } else {
-                    cur = if (cur != pic1) pic1 else pic2
-                    delayThenRunOnUiThread(delayTime / 2) {
-                        if (!activity.isDestroyed)
-                            trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commitAllowingStateLoss()
-                    }
-                }
-                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text) {
+                        trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commitAllowingStateLoss()
+                }, onFinish = {
                     playNext(path)
-                }
-                if (last is VideoFragment) {
-                    last.stop()
-                }
+                })
                 return ResultJSON()
             }
             PlayManager.TYPE_VIDEO -> {
-                if (cur != video) {
+                if (cur != video)
                     cur = video
-                    delayThenRunOnUiThread(500) {
-                        if (!activity.isDestroyed)
-                            trans.show(cur).hide(last).commitAllowingStateLoss()
-                    }
-                }
-                (cur as VideoFragment).playVideo(path, text) {
+                (cur as VideoFragment).playVideo(path, text, onReady = {
+                    if (!activity.isDestroyed)
+                        trans.show(cur).hide(last).commitAllowingStateLoss()
+                }, onFinish = {
                     playNext(path)
-                }
+                })
                 return ResultJSON()
             }
             else -> {

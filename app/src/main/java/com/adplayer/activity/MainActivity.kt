@@ -17,6 +17,8 @@ import com.adplayer.fragment.CirclePLayer
 import com.adplayer.utils.ConnectManager
 import com.adplayer.utils.PlayManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.signature.ObjectKey
 import com.chichiangho.common.base.BaseActivity
 import com.chichiangho.common.extentions.*
 import org.json.JSONObject
@@ -35,6 +37,7 @@ class MainActivity : BaseActivity() {
     private lateinit var barCodeView: ImageView
     private var timer: Timer? = null
     private var mCamera: Camera? = null
+    private var singnature = System.currentTimeMillis()
 
     private fun getIP(): String? {
 
@@ -167,6 +170,7 @@ class MainActivity : BaseActivity() {
                             takePic(callback)
                         }
                         ConnectManager.REFRESH -> {
+                            singnature = System.currentTimeMillis()
                             initDatas()
                         }
                         ConnectManager.COMMAND_GET_LIGHT -> {
@@ -270,7 +274,7 @@ class MainActivity : BaseActivity() {
         if (File(PlayManager.getMapPath()).exists()) {
             mapView.visibility = View.VISIBLE
             circlePLayer.stop()
-            Glide.with(this).load(PlayManager.getMapPath()).into(mapView)
+            Glide.with(this).load(PlayManager.getMapPath()).apply(RequestOptions.signatureOf(ObjectKey(singnature))).into(mapView)
             Handler().postDelayed({
                 mapView.visibility = View.GONE
                 circlePLayer.start()
@@ -285,12 +289,12 @@ class MainActivity : BaseActivity() {
 
             PlayManager.getVideos {
                 sourceList.addAll(it)
-                circlePLayer.setData(sourceList).start()
+                circlePLayer.setData(sourceList).setSignature(singnature).start()
             }
 
             if (File(PlayManager.getBarCodePath()).exists()) {
                 barCodeView.visibility = View.VISIBLE
-                Glide.with(this).load(PlayManager.getBarCodePath()).into(barCodeView)
+                Glide.with(this).load(PlayManager.getBarCodePath()).apply(RequestOptions.signatureOf(ObjectKey(singnature))).into(barCodeView)
             }
         }
     }

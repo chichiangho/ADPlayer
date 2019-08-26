@@ -12,6 +12,7 @@ import android.widget.TextView
 import android.widget.VideoView
 import com.adplayer.R
 import com.chichiangho.common.extentions.delayThenRunOnUiThread
+import java.io.File
 import java.lang.Exception
 
 
@@ -26,32 +27,34 @@ class VideoFragment : Fragment() {
         return view
     }
 
-    fun playVideo(path: String, text: String = "", callback: () -> Unit) {
+    fun playVideo(path: String, text: String = "", onReady: () -> Unit, onFinish: () -> Unit) {
         try {
             tV.text = text
 
             val mmr = MediaMetadataRetriever()
-            mmr.setDataSource(path)
+            mmr.setDataSource(File(path).absolutePath)
             val bitmap = mmr.frameAtTime//获取第一帧图片
             video.background = BitmapDrawable(resources, bitmap)
             mmr.release()//释放资源
 
             video.setVideoPath(path)
             video.setOnPreparedListener {
-//                it.setOnInfoListener { _, what, _ ->
+                //                it.setOnInfoListener { _, what, _ ->
 //                    if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START)
-                        video.setBackgroundColor(Color.TRANSPARENT)
+                video.setBackgroundColor(Color.TRANSPARENT)
 //                    true
 //                }
                 video.start()
             }
             video.setOnCompletionListener {
-                callback.invoke()
+                onFinish.invoke()
+            }
+            delayThenRunOnUiThread(300) {
+                onReady.invoke()
             }
         } catch (e: Exception) {
-            throw RuntimeException(e.message);
+            onFinish.invoke()
         }
-
     }
 
     fun stop() {
