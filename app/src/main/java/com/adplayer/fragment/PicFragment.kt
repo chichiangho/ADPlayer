@@ -15,7 +15,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.ObjectKey
-import com.chichiangho.common.extentions.delayThenRunOnUiThread
+import com.chichiangho.common.extentions.intervalUntilSuccessOnMain
 import io.reactivex.disposables.Disposable
 
 class PicFragment : Fragment() {
@@ -32,27 +32,49 @@ class PicFragment : Fragment() {
     }
 
     private var disposeAble: Disposable? = null
+    var ready = false
 
     fun playPic(path: String, text: String = "", signature: Long, onReady: () -> Unit, onFinish: () -> Unit) {
-        showedCount++
-        if (showedCount > 10) {
-            pic.removeAllViews()
-            showedCount = 0
-        }
+        ready = false
+//        Thread(Runnable {
+//            val drawable = Drawable.createFromPath(path)
+//            activity?.runOnUiThread {
+//                if (pic.childCount == 0)
+//                    pic.addView(ImageView(context))
+//                (pic.getChildAt(0) as ImageView).setImageDrawable(drawable)
+//                tV.text = text
+//                ready = true
+//                onReady.invoke()
+//            }
+//        }).start()
+
+//        showedCount++
+//        if (showedCount > 10) {
+//            pic.removeAllViews()
+//            showedCount = 0
+//        }
         if (pic.childCount == 0)
             pic.addView(ImageView(context))
         Glide.with(this).load(path).apply(RequestOptions.signatureOf(ObjectKey(signature))).into(object : SimpleTarget<Drawable>() {
             override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
-                onReady.invoke()
                 (pic.getChildAt(0) as ImageView).setImageDrawable(resource)
+                tV.text = text
+                ready = true
+                onReady.invoke()
             }
         })
-        tV.text = text
         if (disposeAble?.isDisposed == false)
             disposeAble?.dispose()
-        disposeAble = delayThenRunOnUiThread(delayTime) {
-            onFinish.invoke()
-        }
+        intervalUntilSuccessOnMain(delayTime, false, this,
+                getDisposableAction = {
+                    disposeAble = it
+                },
+                invokeAction = {
+                    if (!ready)
+                        return@intervalUntilSuccessOnMain false
+                    onFinish.invoke()
+                    return@intervalUntilSuccessOnMain true
+                })
     }
 
     fun setDelayTime(delayTime: Long): PicFragment {

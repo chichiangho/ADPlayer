@@ -7,6 +7,8 @@ import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.VideoView
@@ -31,27 +33,25 @@ class VideoFragment : Fragment() {
         try {
             tV.text = text
 
+            video.visibility = VISIBLE
             val mmr = MediaMetadataRetriever()
             mmr.setDataSource(File(path).absolutePath)
             val bitmap = mmr.frameAtTime//获取第一帧图片
             video.background = BitmapDrawable(resources, bitmap)
             mmr.release()//释放资源
 
-            video.setVideoPath(path)
             video.setOnPreparedListener {
-                //                it.setOnInfoListener { _, what, _ ->
-//                    if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START)
-                video.setBackgroundColor(Color.TRANSPARENT)
-//                    true
-//                }
                 video.start()
+                delayThenRunOnUiThread(300) {
+                    video.setBackgroundColor(Color.TRANSPARENT)
+                }
             }
             video.setOnCompletionListener {
                 onFinish.invoke()
             }
-            delayThenRunOnUiThread(300) {
-                onReady.invoke()
-            }
+            video.setVideoPath(path)
+
+            onReady.invoke()
         } catch (e: Exception) {
             onFinish.invoke()
         }
@@ -63,6 +63,7 @@ class VideoFragment : Fragment() {
         delayThenRunOnUiThread(300) {
             if (video.isPlaying)
                 video.pause()
+            video.visibility = GONE
         }
     }
 }

@@ -3,6 +3,7 @@ package com.adplayer.fragment
 import android.content.Context
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
+import android.support.v4.app.FragmentTransaction
 import android.support.v7.app.AppCompatActivity
 import android.util.AttributeSet
 import android.widget.FrameLayout
@@ -19,7 +20,8 @@ class CirclePLayer : FrameLayout {
     var delayTime = 5000L
     val pic1 = PicFragment()
     val pic2 = PicFragment()
-    val video = VideoFragment()
+    val video1 = VideoFragment()
+    val video2 = VideoFragment()
     var cur: Fragment? = null
 
     constructor(context: Context) : super(context)
@@ -34,8 +36,8 @@ class CirclePLayer : FrameLayout {
         this.activity = activity
         this.fragmentManager = fragmentManager
         fragmentManager.beginTransaction()
-                .add(id, pic1).add(id, pic2).add(id, video)
-                .hide(pic1).hide(pic2).hide(video).commitAllowingStateLoss()
+                .add(id, pic1).add(id, pic2).add(id, video1).add(id, video2)
+                .hide(pic1).hide(pic2).hide(video1).hide(video2).commitAllowingStateLoss()
     }
 
     fun setData(data: ArrayList<String>): CirclePLayer {
@@ -83,31 +85,35 @@ class CirclePLayer : FrameLayout {
         if (!File(path).exists())
             return ResultJSON(ResultJSON.NO_SUCH_FILE)
         val last = cur ?: pic2
-        if (last is PicFragment) {
-            last.dispose()
-        }
-        if (last is VideoFragment) {
-            last.stop()
-        }
-
         val trans = fragmentManager.beginTransaction()
         when (PlayManager.getType(path)) {
             PlayManager.TYPE_PIC -> {
                 cur = if (cur != pic1) pic1 else pic2
-                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text,signature, onReady = {
+                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text, signature, onReady = {
                     if (!activity.isDestroyed)
-                        trans.setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left).show(cur).hide(last).commitAllowingStateLoss()
+                        trans.animated().show(cur).hide(last).commitAllowingStateLoss()
+                    if (last is PicFragment) {
+                        last.dispose()
+                    }
+                    if (last is VideoFragment) {
+                        last.stop()
+                    }
                 }, onFinish = {
                     playNext(path)
                 })
                 return ResultJSON()
             }
             PlayManager.TYPE_VIDEO -> {
-                if (cur != video)
-                    cur = video
+                cur = if (cur != video1) video1 else video2
                 (cur as VideoFragment).playVideo(path, text, onReady = {
                     if (!activity.isDestroyed)
-                        trans.show(cur).hide(last).commitAllowingStateLoss()
+                        trans.animated().show(cur).hide(last).commitAllowingStateLoss()
+                    if (last is PicFragment) {
+                        last.dispose()
+                    }
+                    if (last is VideoFragment) {
+                        last.stop()
+                    }
                 }, onFinish = {
                     playNext(path)
                 })
@@ -131,4 +137,8 @@ class CirclePLayer : FrameLayout {
             index = 0
         play(sourceList[index])
     }
+}
+
+fun FragmentTransaction.animated(): FragmentTransaction {
+    return setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
 }
