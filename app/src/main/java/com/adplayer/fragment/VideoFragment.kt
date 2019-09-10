@@ -3,8 +3,10 @@ package com.adplayer.fragment
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadataRetriever
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.GONE
@@ -30,6 +32,7 @@ class VideoFragment : Fragment() {
     }
 
     fun playVideo(path: String, text: String = "", onReady: () -> Unit, onFinish: () -> Unit) {
+        Log.i("video", path)
         try {
             tV.text = text
 
@@ -43,17 +46,24 @@ class VideoFragment : Fragment() {
             video.setOnPreparedListener {
                 video.start()
                 delayThenRunOnUiThread(300) {
-                    video.setBackgroundColor(Color.TRANSPARENT)
+                    video.background = null
                 }
             }
             video.setOnCompletionListener {
                 onFinish.invoke()
+                stop()
             }
-            video.setVideoPath(path)
+            video.setOnErrorListener { _: MediaPlayer, _: Int, _: Int ->
+                onFinish.invoke()
+                stop()
+                true
+            }
 
             onReady.invoke()
+            video.setVideoPath(path)
         } catch (e: Exception) {
             onFinish.invoke()
+            stop()
         }
     }
 

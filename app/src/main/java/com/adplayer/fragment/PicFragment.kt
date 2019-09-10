@@ -3,6 +3,7 @@ package com.adplayer.fragment
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,34 +36,35 @@ class PicFragment : Fragment() {
     var ready = false
 
     fun playPic(path: String, text: String = "", signature: Long, onReady: () -> Unit, onFinish: () -> Unit) {
+        Log.i("pic", path)
         ready = false
-//        Thread(Runnable {
-//            val drawable = Drawable.createFromPath(path)
-//            activity?.runOnUiThread {
-//                if (pic.childCount == 0)
-//                    pic.addView(ImageView(context))
-//                (pic.getChildAt(0) as ImageView).setImageDrawable(drawable)
-//                tV.text = text
-//                ready = true
-//                onReady.invoke()
-//            }
-//        }).start()
+        Thread(Runnable {
+            val drawable = Drawable.createFromPath(path)
+            activity?.runOnUiThread {
+                if (pic.childCount == 0)
+                    pic.addView(ImageView(context))
+                (pic.getChildAt(0) as ImageView).setImageDrawable(drawable)
+                tV.text = text
+                ready = true
+                onReady.invoke()
+            }
+        }).start()
 
 //        showedCount++
 //        if (showedCount > 10) {
 //            pic.removeAllViews()
 //            showedCount = 0
 //        }
-        if (pic.childCount == 0)
-            pic.addView(ImageView(context))
-        Glide.with(this).load(path).apply(RequestOptions.signatureOf(ObjectKey(signature))).into(object : SimpleTarget<Drawable>() {
-            override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
-                (pic.getChildAt(0) as ImageView).setImageDrawable(resource)
-                tV.text = text
-                ready = true
-                onReady.invoke()
-            }
-        })
+//        if (pic.childCount == 0)
+//            pic.addView(ImageView(context))
+//        Glide.with(this).load(path).apply(RequestOptions.signatureOf(ObjectKey(signature))).into(object : SimpleTarget<Drawable>() {
+//            override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
+//                (pic.getChildAt(0) as ImageView).setImageDrawable(resource)
+//                tV.text = text
+//                ready = true
+//                onReady.invoke()
+//            }
+//        })
         if (disposeAble?.isDisposed == false)
             disposeAble?.dispose()
         intervalUntilSuccessOnMain(delayTime, false, this,
@@ -73,6 +75,7 @@ class PicFragment : Fragment() {
                     if (!ready)
                         return@intervalUntilSuccessOnMain false
                     onFinish.invoke()
+                    dispose()
                     return@intervalUntilSuccessOnMain true
                 })
     }

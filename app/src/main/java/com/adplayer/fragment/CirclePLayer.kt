@@ -85,19 +85,12 @@ class CirclePLayer : FrameLayout {
         if (!File(path).exists())
             return ResultJSON(ResultJSON.NO_SUCH_FILE)
         val last = cur ?: pic2
-        val trans = fragmentManager.beginTransaction()
         when (PlayManager.getType(path)) {
             PlayManager.TYPE_PIC -> {
                 cur = if (cur != pic1) pic1 else pic2
                 (cur as PicFragment).setDelayTime(delayTime).playPic(path, text, signature, onReady = {
                     if (!activity.isDestroyed)
-                        trans.animated().show(cur).hide(last).commitAllowingStateLoss()
-                    if (last is PicFragment) {
-                        last.dispose()
-                    }
-                    if (last is VideoFragment) {
-                        last.stop()
-                    }
+                        fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
                 }, onFinish = {
                     playNext(path)
                 })
@@ -107,13 +100,7 @@ class CirclePLayer : FrameLayout {
                 cur = if (cur != video1) video1 else video2
                 (cur as VideoFragment).playVideo(path, text, onReady = {
                     if (!activity.isDestroyed)
-                        trans.animated().show(cur).hide(last).commitAllowingStateLoss()
-                    if (last is PicFragment) {
-                        last.dispose()
-                    }
-                    if (last is VideoFragment) {
-                        last.stop()
-                    }
+                        fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
                 }, onFinish = {
                     playNext(path)
                 })
