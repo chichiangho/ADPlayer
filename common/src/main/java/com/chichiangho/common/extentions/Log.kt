@@ -71,10 +71,10 @@ fun logToFile(time: String, msg: Any?, fileName: String) {
 
 class Logger {
     companion object {
-        const val DEFAULT_TAG = "Logger"
+        const val DEFAULT_TAG = "ADPlayerLogger"
         const val JSON_SPLIT = "( ゜- ゜)つロ"
-        private const val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
-        const val TOP_BORDER = "┌$SINGLE_DIVIDER$SINGLE_DIVIDER"
+        private const val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+        const val TOP_BORDER = "------->\n┌$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val BOTTOM_BORDER = "└$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val MIDDLE_BORDER = "├$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val JSON_INDENT = 2

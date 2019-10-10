@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.VideoView
 import com.adplayer.R
 import com.chichiangho.common.extentions.delayThenRunOnUiThread
+import com.chichiangho.common.extentions.logD
 import java.io.File
 import java.lang.Exception
 
@@ -23,6 +24,8 @@ import java.lang.Exception
 class VideoFragment : Fragment() {
     private lateinit var video: VideoView
     private lateinit var tV: TextView
+    val isPlaying
+        get() = video.isPlaying
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_video, null, false)!!
@@ -32,7 +35,7 @@ class VideoFragment : Fragment() {
     }
 
     fun playVideo(path: String, text: String = "", onReady: () -> Unit, onFinish: () -> Unit) {
-        Log.i("video", path)
+        logD("play video $path")
         try {
             tV.text = text
 
@@ -50,30 +53,28 @@ class VideoFragment : Fragment() {
                 }
             }
             video.setOnCompletionListener {
-                onFinish.invoke()
-                stop()
+                stopped { onFinish.invoke() }
             }
             video.setOnErrorListener { _: MediaPlayer, _: Int, _: Int ->
-                onFinish.invoke()
-                stop()
+                stopped { onFinish.invoke() }
                 true
             }
 
             onReady.invoke()
             video.setVideoPath(path)
         } catch (e: Exception) {
-            onFinish.invoke()
-            stop()
+            stopped { onFinish.invoke() }
         }
     }
 
-    fun stop() {
+    fun stopped(action: () -> Unit) {
         if (video.isPlaying)
             video.pause()
         delayThenRunOnUiThread(300) {
             if (video.isPlaying)
                 video.pause()
             video.visibility = GONE
+            action.invoke()
         }
     }
 }

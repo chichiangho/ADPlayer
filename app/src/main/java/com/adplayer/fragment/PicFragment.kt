@@ -17,6 +17,7 @@ import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.ObjectKey
 import com.chichiangho.common.extentions.intervalUntilSuccessOnMain
+import com.chichiangho.common.extentions.logD
 import io.reactivex.disposables.Disposable
 
 class PicFragment : Fragment() {
@@ -34,9 +35,11 @@ class PicFragment : Fragment() {
 
     private var disposeAble: Disposable? = null
     var ready = false
+    val isPlaying
+        get() = disposeAble?.isDisposed == false
 
     fun playPic(path: String, text: String = "", signature: Long, onReady: () -> Unit, onFinish: () -> Unit) {
-        Log.i("pic", path)
+        logD("play pic $path")
         ready = false
         Thread(Runnable {
             val drawable = Drawable.createFromPath(path)
@@ -74,8 +77,7 @@ class PicFragment : Fragment() {
                 invokeAction = {
                     if (!ready)
                         return@intervalUntilSuccessOnMain false
-                    onFinish.invoke()
-                    dispose()
+                    stopped { onFinish.invoke() }
                     return@intervalUntilSuccessOnMain true
                 })
     }
@@ -85,9 +87,10 @@ class PicFragment : Fragment() {
         return this
     }
 
-    fun dispose() {
+    fun stopped(action: () -> Unit) {
         if (disposeAble?.isDisposed == false)
             disposeAble?.dispose()
         disposeAble = null
+        action.invoke()
     }
 }

@@ -10,6 +10,8 @@ import android.widget.FrameLayout
 import com.adplayer.R
 import com.adplayer.bean.ResultJSON
 import com.adplayer.utils.PlayManager
+import com.chichiangho.common.extentions.delayThenRunOnUiThread
+import com.chichiangho.common.extentions.logD
 import java.io.File
 
 class CirclePLayer : FrameLayout {
@@ -65,11 +67,11 @@ class CirclePLayer : FrameLayout {
         }
     }
 
-    fun stop() {
+    fun stopped(action: () -> Unit) {
         if (cur is VideoFragment)
-            (cur as? VideoFragment)?.stop()
+            (cur as? VideoFragment)?.stopped(action)
         else if (cur is PicFragment)
-            (cur as? PicFragment)?.dispose()
+            (cur as? PicFragment)?.stopped(action)
     }
 
     override fun onAttachedToWindow() {
@@ -123,6 +125,16 @@ class CirclePLayer : FrameLayout {
         if (index == sourceList.size)
             index = 0
         play(sourceList[index])
+    }
+
+    fun tryRefresh() {
+        if (!pic1.isPlaying && !pic2.isPlaying && !video1.isPlaying && !video2.isPlaying)
+            delayThenRunOnUiThread(1000) {
+                if (!pic1.isPlaying && !pic2.isPlaying && !video1.isPlaying && !video2.isPlaying) {
+                    start()
+                    logD("reTry start play")
+                }
+            }
     }
 }
 

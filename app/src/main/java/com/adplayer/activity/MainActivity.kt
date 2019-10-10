@@ -248,6 +248,8 @@ class MainActivity : BaseActivity() {
                         val result = 1024
                         mRemote?.`val` = result
                     }
+
+                    circlePLayer.tryRefresh()
                 }
             }
         }, 10000, 10000)
@@ -273,12 +275,13 @@ class MainActivity : BaseActivity() {
     private fun showMap() {
         if (File(PlayManager.getMapPath()).exists()) {
             mapView.visibility = View.VISIBLE
-            circlePLayer.stop()
-            Glide.with(this).load(PlayManager.getMapPath()).apply(RequestOptions.signatureOf(ObjectKey(singnature))).into(mapView)
-            Handler().postDelayed({
-                mapView.visibility = View.GONE
-                circlePLayer.start()
-            }, 10000)
+            circlePLayer.stopped {
+                Glide.with(this).load(PlayManager.getMapPath()).apply(RequestOptions.signatureOf(ObjectKey(singnature))).into(mapView)
+                Handler().postDelayed({
+                    mapView.visibility = View.GONE
+                    circlePLayer.start()
+                }, 10000)
+            }
         }
     }
 
