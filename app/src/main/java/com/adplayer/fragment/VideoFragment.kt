@@ -1,12 +1,11 @@
 package com.adplayer.fragment
 
-import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.GONE
@@ -18,7 +17,6 @@ import com.adplayer.R
 import com.chichiangho.common.extentions.delayThenRunOnUiThread
 import com.chichiangho.common.extentions.logD
 import java.io.File
-import java.lang.Exception
 
 
 class VideoFragment : Fragment() {
@@ -47,7 +45,11 @@ class VideoFragment : Fragment() {
             mmr.release()//释放资源
 
             video.setOnPreparedListener {
-                video.start()
+                try {
+                    video.start()
+                } catch (e: Exception) {
+                    stopped { onFinish.invoke() }
+                }
                 delayThenRunOnUiThread(300) {
                     video.background = null
                 }
@@ -61,18 +63,23 @@ class VideoFragment : Fragment() {
             }
 
             onReady.invoke()
-            video.setVideoPath(path)
+            video.setVideoURI(Uri.fromFile(File(path)))
         } catch (e: Exception) {
             stopped { onFinish.invoke() }
         }
     }
 
     fun stopped(action: () -> Unit) {
-        if (video.isPlaying)
+        if (video.isPlaying) {
             video.pause()
+            video.suspend()
+        }
+        video.visibility = GONE
         delayThenRunOnUiThread(300) {
-            if (video.isPlaying)
+            if (video.isPlaying) {
                 video.pause()
+                video.suspend()
+            }
             video.visibility = GONE
             action.invoke()
         }

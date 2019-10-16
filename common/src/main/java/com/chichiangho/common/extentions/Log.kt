@@ -73,7 +73,7 @@ class Logger {
     companion object {
         const val DEFAULT_TAG = "ADPlayerLogger"
         const val JSON_SPLIT = "( ゜- ゜)つロ"
-        private const val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
+        private const val SINGLE_DIVIDER = "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈"
         const val TOP_BORDER = "------->\n┌$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val BOTTOM_BORDER = "└$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val MIDDLE_BORDER = "├$SINGLE_DIVIDER$SINGLE_DIVIDER"
@@ -84,35 +84,35 @@ class Logger {
     internal fun e(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
             val s = getMethodNames()
-            Log.e(TAG, String.format(s, msg))
+            Log.e(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
         }
     }
 
     fun w(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
             val s = getMethodNames()
-            Log.w(TAG, String.format(s, msg))
+            Log.w(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
         }
     }
 
     fun i(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
             val s = getMethodNames()
-            Log.i(TAG, String.format(s, msg))
+            Log.i(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
         }
     }
 
     fun d(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
             val s = getMethodNames()
-            Log.d(TAG, String.format(s, msg))
+            Log.d(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
         }
     }
 
     fun v(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
             val s = getMethodNames()
-            Log.v(TAG, String.format(s, msg))
+            Log.v(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
         }
     }
 
@@ -168,7 +168,7 @@ class Logger {
             if (end >= json.length)
                 end = json.length
             if (i == 0)
-                Log.d(TAG, String.format(getMethodNames(false), json.substring(start, end)))
+                Log.d(TAG, String.format(getMethodNames(false), json.substring(start, end).replace("\n", "\n┊ ")))
             else
                 Log.d(TAG, json.substring(start, end))
             start = end
@@ -180,34 +180,47 @@ class Logger {
         if (null == msg) {
             return
         }
-        writeToSDCard(fileName, "[" + time + "] " + msg.toString() + "\n")
+        writeToSDCard(fileName, "[$time] $msg\n")
     }
 
     private fun getMethodNames(withLastLine: Boolean = true): String {
         val sElements = Thread.currentThread().stackTrace
-        var stackOffset = getStackOffset(sElements)
-        stackOffset += 2 //Logger类和Log.kt2个方法占用了2个栈
+        val stackOffset = getStackOffset(sElements)
         val builder = StringBuilder()
+        // 添加当前线程名
         builder.append(TOP_BORDER)
-                .append("\r\n") // 添加当前线程名
+                .append("\r\n")
                 .append("┊ " + "Thread: " + Thread.currentThread().name)
                 .append("\r\n")
                 .append(MIDDLE_BORDER)
-                .append("\r\n") // 添加类名、方法名、行数
-        for (i in 0..if (sElements.size - stackOffset > MAX_STACK_LINE_COUNT - 1) MAX_STACK_LINE_COUNT - 1 else sElements.size - stackOffset) {
+                .append("\r\n")
+        // 添加类名、方法名、行数
+        var ignoreCount = 0
+        for (i in 0 until MAX_STACK_LINE_COUNT) {
+            var index = stackOffset + i + ignoreCount
+            //移除包含$的自动生成方法，线程run,execute等不重要的方法
+            while (index < sElements.size
+                    && (sElements[index].className.contains("$")
+                            || sElements[index].methodName.contains("$"))) {
+                ignoreCount++
+                index++
+            }
+            if (index >= sElements.size)
+                break
             builder.append("┊ ")
-                    .append(sElements[stackOffset + i].className)
+                    .append(sElements[index].className)
                     .append(".")
-                    .append(sElements[stackOffset + i].methodName)
+                    .append(sElements[index].methodName)
                     .append(" ")
                     .append(" (")
-                    .append(sElements[stackOffset + i].fileName)
-                    .append(":").append(sElements[stackOffset + i].lineNumber)
+                    .append(sElements[index].fileName)
+                    .append(":").append(sElements[index].lineNumber)
                     .append(")")
                     .append("\r\n")
         }
+        // 添加打印的日志信息
         builder.append(MIDDLE_BORDER)
-                .append("\r\n") // 添加打印的日志信息
+                .append("\r\n")
                 .append("┊ ")
                 .append("%s")
                 .append("\r\n")
@@ -222,10 +235,12 @@ class Logger {
         while (i < trace.size) {
             val e = trace[i]
             val name = e.className
-            if (name != Logger::class.java.name) {
-                return --i
+            if (name == javaClass.name
+                    || name.startsWith(javaClass.`package`.name + ".LogKt")) {
+                i++
+                continue
             }
-            i++
+            return i
         }
         return -1
     }

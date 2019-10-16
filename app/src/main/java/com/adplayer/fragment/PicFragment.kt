@@ -16,6 +16,7 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.bumptech.glide.signature.ObjectKey
+import com.chichiangho.common.extentions.delayThenRunOnUiThread
 import com.chichiangho.common.extentions.intervalUntilSuccessOnMain
 import com.chichiangho.common.extentions.logD
 import io.reactivex.disposables.Disposable
@@ -49,7 +50,9 @@ class PicFragment : Fragment() {
                 (pic.getChildAt(0) as ImageView).setImageDrawable(drawable)
                 tV.text = text
                 ready = true
-                onReady.invoke()
+                delayThenRunOnUiThread(300) {
+                    onReady.invoke()
+                }
             }
         }).start()
 
@@ -65,7 +68,9 @@ class PicFragment : Fragment() {
 //                (pic.getChildAt(0) as ImageView).setImageDrawable(resource)
 //                tV.text = text
 //                ready = true
-//                onReady.invoke()
+//                delayThenRunOnUiThread(300) {
+//                    onReady.invoke()
+//                }
 //            }
 //        })
         if (disposeAble?.isDisposed == false)
