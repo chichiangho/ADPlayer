@@ -78,42 +78,41 @@ class Logger {
         const val BOTTOM_BORDER = "└$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val MIDDLE_BORDER = "├$SINGLE_DIVIDER$SINGLE_DIVIDER"
         const val JSON_INDENT = 2
-        const val MAX_STACK_LINE_COUNT = 5// 打印调用栈的行數,MAX_STACK_LINE_COUNT行
+        const val MAX_STACK_LINE_COUNT = 1// 打印调用栈的行數,MAX_STACK_LINE_COUNT行
     }
 
     internal fun e(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
-            val s = getMethodNames()
-            Log.e(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
+            Log.e(TAG, getFormattedMsg(msg))
         }
     }
 
     fun w(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
-            val s = getMethodNames()
-            Log.w(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
+            Log.w(TAG, getFormattedMsg(msg))
         }
     }
 
     fun i(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
-            val s = getMethodNames()
-            Log.i(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
+            Log.i(TAG, getFormattedMsg(msg))
         }
     }
 
     fun d(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
-            val s = getMethodNames()
-            Log.d(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
+            Log.d(TAG, getFormattedMsg(msg))
         }
     }
 
     fun v(TAG: String, msg: String) {
         if (msg.isNotBlank()) {
-            val s = getMethodNames()
-            Log.v(TAG, String.format(s, msg.replace("\n", "\n┊ ")))
+            Log.v(TAG, getFormattedMsg(msg))
         }
+    }
+
+    private fun getFormattedMsg(msg: String): String {
+        return String.format(getMethodNames(), msg.replace("\n", "\n┊ "))
     }
 
     fun json(TAG: String, jsonStr: String) {
@@ -163,12 +162,12 @@ class Logger {
             val s = if (start + lineLength >= json.length) ""
             else json.substring(start + lineLength, if (start + lineLength + lineLength > json.length) json.length else start + lineLength + lineLength)
 
-            end = start + lineLength + s.indexOfFirst { it -> it == '\n' }
+            end = start + lineLength + s.indexOfFirst { it == '\n' }
 
             if (end >= json.length)
                 end = json.length
             if (i == 0)
-                Log.d(TAG, String.format(getMethodNames(false), json.substring(start, end).replace("\n", "\n┊ ")))
+                Log.d(TAG, getFormattedMsg(json.substring(start, end)))
             else
                 Log.d(TAG, json.substring(start, end))
             start = end
@@ -188,11 +187,8 @@ class Logger {
         val stackOffset = getStackOffset(sElements)
         val builder = StringBuilder()
         // 添加当前线程名
-        builder.append(TOP_BORDER)
-                .append("\r\n")
-                .append("┊ " + "Thread: " + Thread.currentThread().name)
-                .append("\r\n")
-                .append(MIDDLE_BORDER)
+        builder.append("Thread: " + Thread.currentThread().name + "----->\r\n")
+                .append(TOP_BORDER)
                 .append("\r\n")
         // 添加类名、方法名、行数
         var ignoreCount = 0

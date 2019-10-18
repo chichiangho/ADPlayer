@@ -24,7 +24,7 @@ class CirclePLayer : FrameLayout {
     val pic2 = PicFragment()
     val video1 = VideoFragment()
     val video2 = VideoFragment()
-    var cur: Fragment? = null
+    var cur: BaseFragment? = null
 
     constructor(context: Context) : super(context)
 
@@ -90,22 +90,26 @@ class CirclePLayer : FrameLayout {
         when (PlayManager.getType(path)) {
             PlayManager.TYPE_PIC -> {
                 cur = if (cur != pic1) pic1 else pic2
-                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text, signature, onReady = {
-                    if (!activity.isDestroyed)
-                        fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
-                }, onFinish = {
-                    playNext(path)
-                })
+                (cur as PicFragment).setDelayTime(delayTime).playPic(path, text, signature,
+                        onReady = {
+                            if (!activity.isDestroyed)
+                                fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
+                        },
+                        onFinish = {
+                            playNext(path)
+                        })
                 return ResultJSON()
             }
             PlayManager.TYPE_VIDEO -> {
                 cur = if (cur != video1) video1 else video2
-                (cur as VideoFragment).playVideo(path, text, onReady = {
-                    if (!activity.isDestroyed)
-                        fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
-                }, onFinish = {
-                    playNext(path)
-                })
+                (cur as VideoFragment).playVideo(path, text,
+                        onReady = {
+                            if (!activity.isDestroyed)
+                                fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
+                        },
+                        onFinish = {
+                            playNext(path)
+                        })
                 return ResultJSON()
             }
             else -> {
@@ -128,10 +132,10 @@ class CirclePLayer : FrameLayout {
     }
 
     fun tryRefresh() {
-        if (!pic1.isPlaying && !pic2.isPlaying && !video1.isPlaying && !video2.isPlaying)
-            delayThenRunOnUiThread(1000) {
-                if (!pic1.isPlaying && !pic2.isPlaying && !video1.isPlaying && !video2.isPlaying) {
-                    start()
+        if (cur?.isPlaying() != true)
+            delayThenRunOnUiThread(2000) {
+                if (cur?.isPlaying() != true) {
+                    playNext(cur?.getCurPath() ?: "")
                     logD("reTry start play")
                 }
             }

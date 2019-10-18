@@ -19,11 +19,9 @@ import com.chichiangho.common.extentions.logD
 import java.io.File
 
 
-class VideoFragment : Fragment() {
+class VideoFragment : BaseFragment() {
     private lateinit var video: VideoView
     private lateinit var tV: TextView
-    val isPlaying
-        get() = video.isPlaying
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_video, null, false)!!
@@ -32,8 +30,18 @@ class VideoFragment : Fragment() {
         return view
     }
 
+    override fun isPlaying(): Boolean {
+        return video.isPlaying
+    }
+
+    override fun getCurPath(): String {
+        return curPath
+    }
+
+    private var curPath = ""
     fun playVideo(path: String, text: String = "", onReady: () -> Unit, onFinish: () -> Unit) {
         logD("play video $path")
+        curPath = path
         try {
             tV.text = text
 
@@ -45,27 +53,36 @@ class VideoFragment : Fragment() {
             mmr.release()//释放资源
 
             video.setOnPreparedListener {
+                video.setOnPreparedListener(null)
                 try {
                     video.start()
                 } catch (e: Exception) {
-                    stopped { onFinish.invoke() }
+                    stopped(onFinish)
                 }
-                delayThenRunOnUiThread(300) {
-                    video.background = null
+                delayThenRunOnUiThread(400) {
+                    if (video.visibility == VISIBLE)
+                        video.background = null
                 }
             }
             video.setOnCompletionListener {
-                stopped { onFinish.invoke() }
+                video.setOnCompletionListener(null)
+                stopped(onFinish)
             }
             video.setOnErrorListener { _: MediaPlayer, _: Int, _: Int ->
-                stopped { onFinish.invoke() }
+                video.setOnErrorListener(null)
+                stopped(onFinish)
                 true
             }
 
             onReady.invoke()
-            video.setVideoURI(Uri.fromFile(File(path)))
+            video.setVideoPath(path)
+
+            delayThenRunOnUiThread(500) {
+                if (isVisible && !video.isPlaying)
+                    stopped(onFinish)
+            }
         } catch (e: Exception) {
-            stopped { onFinish.invoke() }
+            stopped(onFinish)
         }
     }
 
@@ -74,14 +91,7 @@ class VideoFragment : Fragment() {
             video.pause()
             video.suspend()
         }
+        action.invoke()
         video.visibility = GONE
-        delayThenRunOnUiThread(300) {
-            if (video.isPlaying) {
-                video.pause()
-                video.suspend()
-            }
-            video.visibility = GONE
-            action.invoke()
-        }
     }
 }
