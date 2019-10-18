@@ -45,15 +45,18 @@ class PicFragment : BaseFragment() {
     }
 
     private var curPath = ""
+    private var nextPath = ""
 
     fun playPic(path: String, text: String = "", signature: Long, onReady: () -> Unit, onFinish: () -> Unit) {
         logD("play pic $path")
         curPath = path
 
-        val drawable = Drawable.createFromPath(path)
-        if (pic.childCount == 0)
-            pic.addView(ImageView(context))
-        (pic.getChildAt(0) as? ImageView)?.setImageDrawable(drawable)
+        if (curPath != nextPath) {
+            val drawable = Drawable.createFromPath(path)
+            if (pic.childCount == 0)
+                pic.addView(ImageView(context))
+            (pic.getChildAt(0) as? ImageView)?.setImageDrawable(drawable)
+        }
         tV.text = text
         onReady.invoke()
 
@@ -83,10 +86,20 @@ class PicFragment : BaseFragment() {
         if (disposeAble?.isDisposed == false)
             disposeAble?.dispose()
         action.invoke()
-        intervalUntilSuccessOnMain(500) {
-            if (!isVisible)
+        intervalUntilSuccessOnMain(1000) {
+            if (!isVisible && nextPath == curPath) {
+                nextPath = "" //确保即使被置空，正常播放时也能播放
                 (pic.getChildAt(0) as? ImageView)?.setImageDrawable(null)
+            }
             !isVisible
         }
+    }
+
+    fun prepare(next: String) {
+        this.nextPath = next
+        val drawable = Drawable.createFromPath(next)
+        if (pic.childCount == 0)
+            pic.addView(ImageView(context))
+        (pic.getChildAt(0) as? ImageView)?.setImageDrawable(drawable)
     }
 }

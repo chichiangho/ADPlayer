@@ -94,6 +94,7 @@ class CirclePLayer : FrameLayout {
                         onReady = {
                             if (!activity.isDestroyed)
                                 fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
+                            prepareNextIfImage(path)
                         },
                         onFinish = {
                             playNext(path)
@@ -106,6 +107,7 @@ class CirclePLayer : FrameLayout {
                         onReady = {
                             if (!activity.isDestroyed)
                                 fragmentManager.beginTransaction().animated().show(cur).hide(last).commitAllowingStateLoss()
+                            prepareNextIfImage(path)
                         },
                         onFinish = {
                             playNext(path)
@@ -114,6 +116,29 @@ class CirclePLayer : FrameLayout {
             }
             else -> {
                 return ResultJSON(ResultJSON.TYPE_NOT_SUPPORT)
+            }
+        }
+    }
+
+    private fun prepareNextIfImage(path: String) {
+        if (sourceList.size == 0)
+            return
+
+        var index = sourceList.indexOf(path)
+        if (index < 0)
+            index = -1
+        index++
+        if (index == sourceList.size)
+            index = 0
+
+        val next = sourceList[index]
+        when (PlayManager.getType(next)) {
+            PlayManager.TYPE_PIC -> {
+                val nextF = if (cur != pic1) pic1 else pic2
+                delayThenRunOnUiThread(500) {
+                    //确保在切换动画后
+                    nextF.prepare(next)
+                }
             }
         }
     }
@@ -143,5 +168,6 @@ class CirclePLayer : FrameLayout {
 }
 
 fun FragmentTransaction.animated(): FragmentTransaction {
-    return setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+//    return setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+    return setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
 }
